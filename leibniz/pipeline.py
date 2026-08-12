@@ -127,6 +127,17 @@ class Engine:
         )
         return rep
 
+    # ---------- COMPUTE (symbolic, Wolfram-Alpha-style) ----------
+
+    def compute(self, query: str, intent: Optional[str] = None):
+        """Symbolically compute a result from a natural-language / symbolic query.
+
+        Backed by SymPy: solve, differentiate, integrate, limit, series,
+        simplify, factor, expand, and matrix operations. Returns a
+        ComputeResult (exact answer + step-by-step)."""
+        from .compute.engine import compute as _compute
+        return _compute(query, intent=intent)
+
 
 # --- module-level default engine ---
 
@@ -160,3 +171,7 @@ def formalize(informal: str) -> "FormalizationResult":
 
 def formalize_and_review(informal: str) -> GateReport:
     return get_engine().formalize_and_review(informal)
+
+
+def compute(query: str, intent: Optional[str] = None):
+    return get_engine().compute(query, intent=intent)

@@ -25,7 +25,7 @@ from contextlib import asynccontextmanager
 # Make `leibniz` importable when running from the project dir.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
@@ -139,6 +139,34 @@ async def encyclopedia(q: str = Query("", description="search query"),
     enc = default_enc()
     results = enc.search(q, limit=limit) if q else enc.all()[:limit]
     return EncyclopediaResp(query=q, results=results)
+
+
+@app.post("/compute", tags=["Compute"], summary="Symbolic computation (Wolfram-Alpha-style)")
+async def compute_endpoint(payload: dict):
+    """Symbolically compute a result from a natural-language / symbolic query.
+
+    Backed by SymPy: solve, differentiate, integrate, limit, series, simplify,
+    factor, expand, and matrix operations (determinant, inverse, eigenvalues, rank, trace)."""
+    query = (payload or {}).get("query", "")
+    if not query:
+        raise HTTPException(status_code=400, detail="Field 'query' is required.")
+    result = engine.compute(query)
+    return result.to_dict()
+
+
+@app.post("/formalize", tags=["Formalize"], summary="Natural language to Lean (autoformalization)")
+async def formalize_endpoint(payload: dict):
+    """Translate an informal mathematical statement into a candidate Lean 4 statement."""
+    informal = (payload or {}).get("informal", "")
+    if not informal:
+        raise HTTPException(status_code=400, detail="Field 'informal' is required.")
+    r = engine.formalize(informal)
+    return {
+        "informal": r.informal, "lean_statement": r.lean_statement,
+        "confidence": r.confidence, "source": r.source,
+        "matched_entry": r.matched_entry, "mathlib_refs": r.mathlib_refs,
+        "notes": r.notes,
+    }
 
 
 @app.get("/", response_class=HTMLResponse, tags=["System"])

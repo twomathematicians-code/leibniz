@@ -281,7 +281,7 @@ st.sidebar.markdown(f"""
 | Lean | {"available" if engine.lean.available else "provisional"} |
 """)
 
-mode = st.sidebar.radio("", ["Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
+mode = st.sidebar.radio("", ["Compute", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
 
 st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
 if SAMPLE_FILE.exists():
@@ -304,7 +304,54 @@ st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.
 # MODE: Single Review
 # ═══════════════════════════════════════════════════════════════════════
 
-if mode == "Single Review":
+# MODE: Compute (Wolfram-Alpha-style symbolic engine)
+if mode == "Compute":
+    st.markdown('<p class="brand-label">Symbolic Computation</p>', unsafe_allow_html=True)
+    st.markdown("## Compute")
+    st.caption("Exact, step-by-step symbolic computation — solve, differentiate, integrate, matrices.")
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        examples_compute = [
+            "(custom)",
+            "solve x^2 - 5*x + 6 = 0",
+            "derivative of x^3 + 2*x^2",
+            "integral of 1/(1 + x^2)",
+            "limit of sin(x)/x as x -> 0",
+            "taylor series of exp(x)",
+            "simplify (x^2 - 1)/(x - 1)",
+            "factor x^3 - 6*x^2 + 11*x - 6",
+            "expand (x + 2)^4",
+            "determinant of [[1,2],[3,4]]",
+            "inverse of [[1,2],[3,4]]",
+            "eigenvalues of [[2,0],[0,3]]",
+            "rank of [[1,2,3],[2,4,6],[1,1,1]]",
+            "trace of [[1,2],[3,4]]",
+            "2/3 + 5/7",
+        ]
+        choice = st.selectbox("Load example", examples_compute, label_visibility="collapsed")
+        default_q = "" if choice == "(custom)" else choice
+        q = st.text_input("Query", value=default_q, placeholder="e.g. solve x^2 - 1 = 0",
+                          label_visibility="collapsed")
+        go_c = st.button("Compute", type="primary", use_container_width=True)
+
+    with c2:
+        if go_c and q.strip():
+            r = engine.compute(q.strip())
+            st.markdown('<div class="brand-label">Input interpretation</div>', unsafe_allow_html=True)
+            st.code(r.input_interpretation or q)
+            st.markdown('<div class="brand-label">Answer</div>', unsafe_allow_html=True)
+            if r.ok:
+                st.markdown(f"**{r.answer}**")
+                if r.answer_latex and r.answer_latex != r.answer:
+                    st.latex(r.answer_latex)
+                with st.expander("Step-by-step"):
+                    for s in r.steps:
+                        st.markdown(s)
+            else:
+                st.error(r.error or "Computation failed.")
+
+elif mode == "Single Review":
     st.markdown('<p class="brand-label">Single Review</p>', unsafe_allow_html=True)
     st.markdown("## Theorem Review")
 

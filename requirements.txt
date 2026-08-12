@@ -3,6 +3,9 @@
 pydantic>=2
 pyyaml>=6
 
+# --- Symbolic computation (Wolfram-Alpha-style compute layer) ---
+sympy>=1.12
+
 # --- API host (api/) ---
 fastapi>=0.110
 uvicorn[standard]>=0.27
