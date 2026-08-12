@@ -267,7 +267,7 @@ if SAMPLE_FILE.exists():
         st.sidebar.download_button("Download LA sample · JSONL", f.read(), "linear_algebra.jsonl", "application/jsonl",
                                    use_container_width=True)
 
-st.sidebar.markdown("**Resources**  \n[GitHub](https://github.com/twomathematicians-code/leibniz)  \n[Browser playground](https://twomathematicians-code.github.io/leibniz/)  \n[Hugging Face](https://huggingface.co/twomathematicians-code)")
+st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.app/)  \n[Browser playground](https://twomathematicians-code.github.io/leibniz/)  \n[GitHub](https://github.com/twomathematicians-code/leibniz)")
 
 # ═══════════════════════════════════════════════════════════════════════
 # MODE: Single Review

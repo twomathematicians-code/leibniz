@@ -380,8 +380,9 @@ def build():
                 ### References
                 - **Tudor Achim** — *The Path to Mathematical Superintelligence* (TED)
                 - **G.W. Leibniz** — *De Arte Combinatoria* (1666)
-                - [GitHub repo](https://github.com/twomathematicians-code/leibniz)
+                - [Streamlit App](https://leibniz.streamlit.app/)
                 - [Browser playground](https://twomathematicians-code.github.io/leibniz/)
+                - [GitHub repo](https://github.com/twomathematicians-code/leibniz)
                 """)
 
         # Initialize status

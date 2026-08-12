@@ -3,7 +3,8 @@
   <img src="https://img.shields.io/badge/Lean-4.14.0-brightgreen?logo=lean" alt="Lean 4">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/Tests-53%2F53-success" alt="Tests">
-  <img src="https://img.shields.io/badge/Streamlit-ready-FF4B4B?logo=streamlit" alt="Streamlit">
+  <img src="https://img.shields.io/badge/Streamlit-live-000000?logo=streamlit&logoColor=white" alt="Streamlit">
+  <img src="https://img.shields.io/badge/Pages-live-000000?logo=githubpages&logoColor=white" alt="Pages">
   <img src="https://img.shields.io/badge/HuggingFace-Space-FF9D00?logo=huggingface" alt="HF Space">
 </p>
 
@@ -16,7 +17,8 @@
 </p>
 
 <p align="center">
-  <a href="https://twomathematicians-code.github.io/leibniz/">🌐 Live Demo</a> ·
+  <a href="https://leibniz.streamlit.app/">🌐 Streamlit App</a> ·
+  <a href="https://twomathematicians-code.github.io/leibniz/">🌐 Browser Demo</a> ·
   <a href="#-what-it-does">📐 Overview</a> ·
   <a href="#-quick-start">🚀 Quick Start</a> ·
   <a href="#-mathematical-domains">📚 Domains</a> ·
@@ -208,13 +210,12 @@ leibniz/
 
 ## ☁️ Deploy
 
-| Surface | Command / URL | Host |
-|---------|--------------|------|
-| **Streamlit Cloud** | Push repo → [share.streamlit.io](https://share.streamlit.io) | Free |
-| **Browser playground** | [twomathematicians-code.github.io/leibniz](https://twomathematicians-code.github.io/leibniz/) | GitHub Pages |
+| Surface | URL | Host |
+|---------|-----|------|
+| **Streamlit Cloud** | [leibniz.streamlit.app](https://leibniz.streamlit.app/) | Free — live |
+| **Browser playground** | [twomathematicians-code.github.io/leibniz](https://twomathematicians-code.github.io/leibniz/) | GitHub Pages — live |
 | **HF Space** | Copy `app/` to a new Space | Free CPU |
 | **API host** | `docker build -f api/Dockerfile .` | Render / Fly.io |
-| **Model server** | `LEIBNIZ_BACKEND=hf uvicorn leibniz.llm.server:app` | GPU host |
 
 ---
 
