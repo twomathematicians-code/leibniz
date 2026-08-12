@@ -1,0 +1,30 @@
+{"name":"two_plus_two","statement":"theorem two_plus_two : 2 + 2 = 4","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"three_times_three","statement":"theorem three_times_three : 3 * 3 = 9","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"four_plus_five","statement":"theorem four_plus_five : 4 + 5 = 9","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"six_times_seven","statement":"theorem six_times_seven : 6 * 7 = 42","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"ten_minus_four","statement":"theorem ten_minus_four : 10 - 4 = 6","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"one_hundred_minus_ninety_nine","statement":"theorem one_hundred_minus_ninety_nine : 100 - 99 = 1","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"twenty_div_four","statement":"theorem twenty_div_four : 20 / 4 = 5","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"twelve_mod_five","statement":"theorem twelve_mod_five : 12 % 5 = 2","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"zero_plus_zero","statement":"theorem zero_plus_zero : 0 + 0 = 0","proof":"by rfl","domain":"arithmetic","difficulty":"easy"}
+{"name":"two_pow_five","statement":"theorem two_pow_five : 2 ^ 5 = 32","proof":"by decide","domain":"arithmetic","difficulty":"easy"}
+{"name":"three_pow_three","statement":"theorem three_pow_three : 3 ^ 3 = 27","proof":"by decide","domain":"arithmetic","difficulty":"easy"}
+{"name":"add_zero_left","statement":"theorem add_zero_left (n : Nat) : n + 0 = n","proof":"by rfl","domain":"algebra","difficulty":"easy"}
+{"name":"mul_zero_right","statement":"theorem mul_zero_right (n : Nat) : n * 0 = 0","proof":"by rfl","domain":"algebra","difficulty":"easy"}
+{"name":"mul_one_right","statement":"theorem mul_one_right (n : Nat) : n * 1 = n","proof":"by rfl","domain":"algebra","difficulty":"easy"}
+{"name":"succ_eq_add_one","statement":"theorem succ_eq_add_one (n : Nat) : Nat.succ n = n + 1","proof":"by rfl","domain":"algebra","difficulty":"medium"}
+{"name":"add_succ_eq","statement":"theorem add_succ_eq (a b : Nat) : a + Nat.succ b = Nat.succ (a + b)","proof":"by rfl","domain":"algebra","difficulty":"medium"}
+{"name":"add_comm_nat","statement":"theorem add_comm_nat (a b : Nat) : a + b = b + a","proof":"by rw [Nat.add_comm]","domain":"algebra","difficulty":"medium"}
+{"name":"add_assoc_nat","statement":"theorem add_assoc_nat (a b c : Nat) : (a + b) + c = a + (b + c)","proof":"by rw [Nat.add_assoc]","domain":"algebra","difficulty":"medium"}
+{"name":"mul_comm_nat","statement":"theorem mul_comm_nat (a b : Nat) : a * b = b * a","proof":"by rw [Nat.mul_comm]","domain":"algebra","difficulty":"medium"}
+{"name":"mul_assoc_nat","statement":"theorem mul_assoc_nat (a b c : Nat) : (a * b) * c = a * (b * c)","proof":"by rw [Nat.mul_assoc]","domain":"algebra","difficulty":"medium"}
+{"name":"add_right_self","statement":"theorem add_right_self (a : Nat) : a + a = 2 * a","proof":"by rw [Nat.two_mul]","domain":"algebra","difficulty":"hard"}
+{"name":"zero_lt_one","statement":"theorem zero_lt_one : 0 < (1 : Nat)","proof":"by decide","domain":"order","difficulty":"easy"}
+{"name":"zero_le_one","statement":"theorem zero_le_one : 0 ≤ (1 : Nat)","proof":"by decide","domain":"order","difficulty":"easy"}
+{"name":"succ_pos","statement":"theorem succ_pos (n : Nat) : 0 < Nat.succ n","proof":"by decide","domain":"order","difficulty":"medium"}
+{"name":"le_add_one","statement":"theorem le_add_one (n : Nat) : n ≤ n + 1","proof":"by rw [Nat.le_add_right]","domain":"order","difficulty":"medium"}
+{"name":"le_refl_nat","statement":"theorem le_refl_nat (n : Nat) : n ≤ n","proof":"by rw [Nat.le_refl]","domain":"order","difficulty":"medium"}
+{"name":"add_left_cancel","statement":"theorem add_left_cancel (a b c : Nat) : a + b = a + c → b = c","proof":"by rw [Nat.add_left_cancel]","domain":"algebra","difficulty":"hard"}
+{"name":"even_zero","statement":"theorem even_zero : Even (0 : Nat)","proof":"by rw [Nat.even_zero]","domain":"number_theory","difficulty":"medium"}
+{"name":"dvd_refl_nat","statement":"theorem dvd_refl_nat (a : Nat) : a ∣ a","proof":"by rw [Nat.dvd_refl]","domain":"number_theory","difficulty":"medium"}
+{"name":"one_dvd","statement":"theorem one_dvd (a : Nat) : 1 ∣ a","proof":"by rw [Nat.one_dvd]","domain":"number_theory","difficulty":"medium"}

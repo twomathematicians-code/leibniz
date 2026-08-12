@@ -1,0 +1,5 @@
+# Leibniz proof-engine API (stub backend; no ML stack)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2
+pyyaml>=6

@@ -1,0 +1,17 @@
+# Base model reference for the Leibniz prover.
+#
+# The engine is model-agnostic. Any causal LM that follows instructions and
+# emits Lean 4 will work. The choices below are good starting points; pick one
+# and set `base_model:` in your training config accordingly.
+#
+#   Qwen/Qwen2.5-Math-1.5B-Instruct   (default; strong math, small, MIT license)
+#   Qwen/Qwen2.5-Math-7B-Instruct     (larger; needs >=24GB VRAM for LoRA)
+#   deepseek-ai/deepseek-math-7b-instruct
+#   meta-llama/Llama-3.2-1B-Instruct  (gated; general-purpose baseline)
+#
+# For a first run on a single consumer GPU, use Qwen2.5-Math-1.5B-Instruct with
+# the LoRA config (finetune_lora.yaml).
+
+base_model: Qwen/Qwen2.5-Math-1.5B-Instruct
+tokenizer: null
+torch_dtype: bf16

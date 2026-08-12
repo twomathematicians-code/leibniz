@@ -1,0 +1,15 @@
+# Leibniz Engine — CORE requirements (lightweight; no ML stack needed)
+# The full pipeline runs end-to-end on these alone via the StubBackend.
+pydantic>=2
+pyyaml>=6
+
+# --- API host (api/) ---
+fastapi>=0.110
+uvicorn[standard]>=0.27
+
+# --- HF Space demo (app/) ---
+gradio>=4
+
+# Heavy ML deps (training / real model inference) are NOT included here.
+# Install them separately when ready:
+#   pip install -r leibniz/training/requirements.txt

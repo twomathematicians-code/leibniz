@@ -1,0 +1,4 @@
+# Leibniz HF Space — lightweight deps (NO torch — runs on free CPU tier)
+gradio>=4
+pydantic>=2
+pyyaml>=6

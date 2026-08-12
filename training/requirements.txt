@@ -1,0 +1,9 @@
+# Leibniz training framework — HEAVY dependencies (install only for fine-tuning)
+# pip install -r leibniz/training/requirements.txt
+torch>=2.1
+transformers>=4.40
+peft>=0.10
+trl>=0.8
+datasets>=2.18
+accelerate>=0.25
+pyyaml>=6

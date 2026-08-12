@@ -1,0 +1,48 @@
+# Leibniz Engine — package definition
+# Install (editable):  pip install -e ./leibniz
+# Or set PYTHONPATH=./leibniz to import `leibniz` directly (no install).
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leibniz-engine"
+version = "0.1.0"
+description = "Leibniz's universal calculator for truth: a three-stage LLM-driven mathematical discovery and proof-checking engine."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "twomathematicians-code" }]
+keywords = ["lean", "theorem-proving", "formal-mathematics", "llm", "leibniz", "proof-assistant"]
+
+# CORE dependencies only — keeps the whole pipeline runnable with no ML stack.
+# Heavy ML deps live in [project.optional-dependencies] / training/requirements.txt.
+dependencies = [
+    "pydantic>=2",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.27"]
+app = ["gradio>=4", "fastapi>=0.110", "uvicorn[standard]>=0.27"]
+training = [
+    "torch>=2.1",
+    "transformers>=4.40",
+    "peft>=0.10",
+    "trl>=0.8",
+    "datasets>=2.18",
+    "accelerate>=0.25",
+]
+remote = ["requests>=2.31"]
+
+[project.urls]
+Homepage = "https://github.com/twomathematicians-code/riemann-hypothesis"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["leibniz*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

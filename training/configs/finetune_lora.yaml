@@ -1,0 +1,38 @@
+# Leibniz prover — LoRA fine-tune (recommended; single-GPU friendly)
+# Usage: python leibniz/training/train.py --config leibniz/training/configs/finetune_lora.yaml
+
+# --- base model ---
+base_model: Qwen/Qwen2.5-Math-1.5B-Instruct
+tokenizer: null                 # null -> use base_model's tokenizer
+torch_dtype: bf16
+
+# --- method ---
+method: lora
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+# --- data ---
+data:
+  corpus: leibniz/training/data/bundled_sample.jsonl   # swap for a larger corpus
+  val_split: 0.1
+
+# --- training ---
+max_seq_length: 1024
+training:
+  output_dir: leibniz/training/checkpoints/lora
+  epochs: 3
+  batch_size: 4
+  grad_accum: 4
+  lr: 2.0e-4
+  warmup_ratio: 0.03
+
+# --- generation (used by eval.py) ---
+generation:
+  max_new_tokens: 256
+  temperature: 0.7
+
+eval:
+  k: 4

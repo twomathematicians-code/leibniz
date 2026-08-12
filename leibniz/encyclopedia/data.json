@@ -1,0 +1,126 @@
+{
+  "version": "0.1.0",
+  "description": "Leibniz Encyclopedia: seed knowledge base of theorems (informal + Lean 4) used by the StubBackend and the conceptual-alignment gate. Lean proofs use Lean 4 core (no Mathlib) so they compile in the bundled leibniz/lean project. Deeper entries are stated but intentionally NOT certified in core to illustrate hard-conjecture discovery.",
+  "entries": [
+    {
+      "name": "two_plus_two",
+      "informal": "The sum of two and two equals four.",
+      "lean_statement": "theorem two_plus_two : 2 + 2 = 4",
+      "lean_proof": "by rfl",
+      "domain": "arithmetic",
+      "difficulty": "easy",
+      "keywords": ["addition", "arithmetic", "numbers", "sum"],
+      "rationale": "The simplest possible check that formal numerals reduce correctly under definitional equality."
+    },
+    {
+      "name": "three_times_three",
+      "informal": "Three multiplied by three equals nine.",
+      "lean_statement": "theorem three_times_three : 3 * 3 = 9",
+      "lean_proof": "by rfl",
+      "domain": "arithmetic",
+      "difficulty": "easy",
+      "keywords": ["multiplication", "arithmetic", "numbers", "product"],
+      "rationale": "Foundational multiplicative identity; verifies kernel reduction for Nat literals."
+    },
+    {
+      "name": "ten_minus_four",
+      "informal": "Ten minus four equals six.",
+      "lean_statement": "theorem ten_minus_four : 10 - 4 = 6",
+      "lean_proof": "by rfl",
+      "domain": "arithmetic",
+      "difficulty": "easy",
+      "keywords": ["subtraction", "arithmetic", "numbers"],
+      "rationale": "Checks truncating subtraction on natural-number literals."
+    },
+    {
+      "name": "add_zero_left",
+      "informal": "For every natural number n, n + 0 = n.",
+      "lean_statement": "theorem add_zero_left (n : Nat) : n + 0 = n",
+      "lean_proof": "by rfl",
+      "domain": "algebra",
+      "difficulty": "easy",
+      "keywords": ["addition", "identity", "algebra", "natural numbers"],
+      "rationale": "The left identity law for addition; a universal (quantified) statement rather than a closed numeric fact."
+    },
+    {
+      "name": "add_comm_nat",
+      "informal": "Addition of natural numbers is commutative: a + b = b + a.",
+      "lean_statement": "theorem add_comm_nat (a b : Nat) : a + b = b + a",
+      "lean_proof": "by rw [Nat.add_comm]",
+      "domain": "algebra",
+      "difficulty": "medium",
+      "keywords": ["addition", "commutativity", "algebra", "natural numbers"],
+      "rationale": "Commutativity is a structural property of addition; exercising core rewrite lemmas."
+    },
+    {
+      "name": "mul_one_right",
+      "informal": "For every natural number n, n * 1 = n.",
+      "lean_statement": "theorem mul_one_right (n : Nat) : n * 1 = n",
+      "lean_proof": "by rfl",
+      "domain": "algebra",
+      "difficulty": "medium",
+      "keywords": ["multiplication", "identity", "algebra", "natural numbers"],
+      "rationale": "Multiplicative right identity; reduces definitionally via the base equation of Nat.mul."
+    },
+    {
+      "name": "even_square_is_even",
+      "informal": "The square of an even number is divisible by four.",
+      "lean_statement": "theorem even_square_is_even (n : Nat) : (2 * n) ^ 2 = 4 * (n ^ 2)",
+      "lean_proof": "by rw [mul_pow, mul_assoc]; ring",
+      "domain": "number_theory",
+      "difficulty": "medium",
+      "keywords": ["parity", "divisibility", "squares", "number theory", "algebra"],
+      "rationale": "A first bridge between arithmetic and multiplicative number theory: parity is preserved under squaring."
+    },
+    {
+      "name": "infinitude_of_primes",
+      "informal": "There are infinitely many prime numbers.",
+      "lean_statement": "theorem infinitude_of_primes : ∀ n, ∃ p, p > n ∧ Nat.Prime p",
+      "lean_proof": "",
+      "domain": "number_theory",
+      "difficulty": "hard",
+      "keywords": ["primes", "infinitude", "number theory", "euclid"],
+      "rationale": "Euclid's classical theorem. Stated here as a hard discovery target; a full Lean proof requires Nat.Prime machinery (Mathlib)."
+    },
+    {
+      "name": "fermat_little",
+      "informal": "Fermat's little theorem: if p is prime and p does not divide a, then p divides a^(p-1) - 1.",
+      "lean_statement": "theorem fermat_little (p : Nat) (hp : Nat.Prime p) (a : Nat) (ha : ¬ p ∣ a) : p ∣ a ^ (p - 1) - 1",
+      "lean_proof": "",
+      "domain": "number_theory",
+      "difficulty": "hard",
+      "keywords": ["primes", "modular arithmetic", "fermat", "number theory"],
+      "rationale": "A pillar of elementary number theory; formalization requires substantial Mathlib group/ring machinery."
+    },
+    {
+      "name": "bertrand_postulate",
+      "informal": "Bertrand's postulate: for every n > 1 there is a prime strictly between n and 2n.",
+      "lean_statement": "theorem bertrand_postulate : ∀ n > 1, ∃ p, n < p ∧ p < 2 * n ∧ Nat.Prime p",
+      "lean_proof": "",
+      "domain": "number_theory",
+      "difficulty": "hard",
+      "keywords": ["primes", "distribution", "bertrand", "number theory"],
+      "rationale": "A non-trivial result on prime distribution; deep formalization target."
+    },
+    {
+      "name": "set_union_self",
+      "informal": "The union of any set with itself equals itself.",
+      "lean_statement": "theorem set_union_self (α : Type) (s : Set α) : s ∪ s = s",
+      "lean_proof": "by ext x; simp [Set.or_self]",
+      "domain": "set_theory",
+      "difficulty": "easy",
+      "keywords": ["sets", "union", "idempotence", "set theory"],
+      "rationale": "Idempotence of union; a basic law of set algebra."
+    },
+    {
+      "name": "rh_critical_line",
+      "informal": "(Domain example) The first few non-trivial zeros of the Riemann zeta function lie on the critical line Re(s)=1/2.",
+      "lean_statement": "-- Stated numerically, not formally: zeros at gamma = 14.1347, 21.0220, 25.0109, ...",
+      "lean_proof": "",
+      "domain": "analytic_number_theory",
+      "difficulty": "hard",
+      "keywords": ["riemann", "zeta", "zeros", "critical line", "analytic number theory"],
+      "rationale": "Connects the engine to this repository's Riemann-Hypothesis toolkit; a numerical, not formal, conjecture."
+    }
+  ]
+}

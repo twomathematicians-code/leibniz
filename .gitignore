@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Training artifacts
+training/checkpoints/
+training/data/cache/
+*.safetensors
+*.bin
+*.pt
+
+# Lean 4
+.lake/
+lean/build/
+lean/lake-packages/
+
+# Testing
+.pytest_cache/
+.eggs/
+
+# OS
+.DS_Store
+Thumbs.db
