@@ -158,30 +158,40 @@ Upload a PDF containing LaTeX‑formatted or plain‑text theorems. The engine e
 
 ## 🏛 How It Works
 
+**[→ Interactive workflow diagram](https://twomathematicians-code.github.io/leibniz/workflow.html)** — three views: Review, Discovery, Full System.
+
 ```
-                         ┌─────────────────────┐
-  Theorem T + Proof π    │   Leibniz Engine    │
-  ──────────────────────▶│                     │
-                         │  ┌─────────────────┐│
-  (upload PDF/JSONL      │  │ Gate 1: VALIDITY ││   ✅ / ❌ / ⚪
-   or type manually)     │  │ Lean compile or  ││──────────────▶ certificate
-                         │  │ pattern-match    ││
-                         │  └────────┬────────┘│
-                         │           ▼         │
-                         │  ┌─────────────────┐│
-                         │  │ Gate 2: ALIGNMENT││   0.0–1.0
-                         │  │ Concept overlap  ││──────────────▶ matched / missing
-                         │  │ vs. encyclopedia ││
-                         │  └────────┬────────┘│
-                         │           ▼         │
-                         │  ┌─────────────────┐│
-                         │  │ Gate 3: READING  ││   pass / warn / fail
-                         │  │ easy→medium→hard ││──────────────▶ per‑tier critique
-                         │  └────────┬────────┘│
-                         │           ▼         │
-                         │       🏁 OVERALL    │
-                         └─────────────────────┘
+  Theorem T + Proof π
+        │
+        ▼
+  ┌─────────────────────────────────────────────────────┐
+  │                 Leibniz Engine                       │
+  │                                                      │
+  │   ┌──────────────┐    ┌──────────────┐    ┌────────┐│
+  │   │ GATE 1       │    │ GATE 2       │    │ GATE 3 ││
+  │   │ VALIDITY     │───▶│ ALIGNMENT    │───▶│ READING││
+  │   │              │    │              │    │        ││
+  │   │ Lean compile │    │ Concept      │    │ easy   ││
+  │   │ or pattern-  │    │ overlap      │    │ medium ││
+  │   │ match        │    │ score 0→1    │    │ hard   ││
+  │   │              │    │              │    │        ││
+  │   │ ● / ◐ / ○   │    │ matched /    │    │ pass / ││
+  │   │              │    │ missing      │    │ warn / ││
+  │   └──────────────┘    └──────────────┘    │ fail   ││
+  │                                           └────────┘│
+  │                                                      │
+  │   All three must clear → 🏁 OVERALL: PASS / ATTENTION │
+  └─────────────────────────────────────────────────────┘
+        │
+        ▼
+  Certificate + downloadable JSON report
 ```
+
+| Path | Description |
+|------|-------------|
+| **Review mode** | Submit a theorem + proof → 3‑gate verdict |
+| **Discovery mode** | Seed a topic → Discover conjectures → Prove (k candidates) → Verify (Lean) |
+| **Knowledge base** | 24 encyclopedia entries provide ground‑truth for Gate 2 &amp; provisional Gate 1 |
 
 ---
 

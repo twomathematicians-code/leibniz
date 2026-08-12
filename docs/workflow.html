@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leibniz — Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #000;
+    --slate: #1f2937;
+    --muted: #6b7280;
+    --faint: #f3f4f6;
+    --line: #e5e7eb;
+    --paper: #fff;
+    --mono: 'SF Mono','Consolas','Roboto Mono',monospace;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;min-height:100vh}
+  header{text-align:center;padding:2.5rem 1rem 1.5rem;border-bottom:1px solid var(--line)}
+  header h1{font-size:1.8rem;font-weight:800;letter-spacing:-0.5px}
+  header p{color:var(--muted);font-size:.9rem;margin-top:.3rem}
+  header a{color:var(--ink);font-weight:600;text-decoration:none}
+  header a:hover{text-decoration:underline}
+  main{max-width:1100px;margin:0 auto;padding:2rem 1rem 3rem}
+
+  .section-title{
+    font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--muted);margin:2rem 0 .8rem;text-align:center;
+  }
+
+  /* ═══════ WORKFLOW ═══════ */
+  .wf{display:flex;flex-direction:column;align-items:center;gap:0;margin:2rem 0}
+
+  .wf-row{display:flex;align-items:stretch;gap:0;width:100%;max-width:1000px}
+
+  /* Input node */
+  .node{
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:1.2rem 1rem;text-align:center;background:var(--paper);
+    box-shadow:0 1px 2px rgba(0,0,0,.05);
+    flex:1;min-width:0;position:relative;
+  }
+  .node-title{font-weight:700;font-size:.88rem;margin-bottom:.3rem}
+  .node-sub{font-size:.72rem;color:var(--muted)}
+  .node.body-node{border:2px solid var(--ink)}
+  .node.gate-pass{border-left:3px solid var(--ink)}
+  .node.gate-skip{border-left:3px solid var(--muted)}
+  .node.gate-fail{border-left:3px solid var(--line)}
+
+  /* Arrows */
+  .arr-row{display:flex;justify-content:center;align-items:center;height:32px;position:relative}
+  .arr-down{width:2px;height:28px;background:var(--ink);position:relative}
+  .arr-down::after{content:'';position:absolute;bottom:0;left:-4px;border:5px solid transparent;border-top:6px solid var(--ink);border-bottom:0}
+  .arr-label{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 8px;white-space:nowrap}
+
+  .arr-split{display:flex;gap:0;align-items:flex-start;justify-content:center;width:100%;max-width:1000px}
+  .arr-branch{display:flex;flex-direction:column;align-items:center;flex:1}
+  .arr-h{height:2px;width:100%;background:var(--line)}
+  .arr-h-solid{background:var(--ink)}
+  .arr-v{width:2px;height:20px;background:var(--ink)}
+  .arr-v::after{content:'';position:relative;display:block;left:-4px;border:5px solid transparent;border-top:6px solid var(--ink);border-bottom:0}
+
+  /* Gate detail inside nodes */
+  .gate-mechanism{font-size:.7rem;color:var(--muted);margin-top:.3rem;font-family:var(--mono)}
+  .gate-output{font-size:.7rem;margin-top:.3rem;font-weight:600}
+
+  /* Verdict node */
+  .verdict-node{border:2px solid var(--ink);border-radius:var(--radius);padding:1rem 2rem;text-align:center;background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .verdict-node.pass{border-style:solid}
+  .verdict-node.fail{border-style:dashed}
+
+  /* Pipeline row */
+  .pipe{display:flex;align-items:stretch;gap:0;max-width:1000px;width:100%;margin:0 auto}
+  .pipe .node{flex:1}
+
+  /* Legend */
+  .legend{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin:2rem 0}
+  .leg-item{display:flex;align-items:center;gap:.4rem;font-size:.75rem}
+  .leg-dot{width:10px;height:10px;border-radius:50%;background:var(--ink)}
+  .leg-dot.skip{background:var(--muted)}
+  .leg-dot.fail{background:var(--line);border:1px solid var(--muted)}
+
+  /* Mode toggle */
+  .mode-tabs{display:flex;justify-content:center;gap:0;margin-bottom:1.5rem}
+  .mode-tab{
+    padding:.5em 1.5em;border:1px solid var(--line);cursor:pointer;
+    font-size:.82rem;font-weight:600;background:var(--paper);
+    font-family:'Inter',sans-serif;transition:.12s;
+  }
+  .mode-tab:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+  .mode-tab:last-child{border-radius:0 var(--radius) var(--radius) 0}
+  .mode-tab.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* Discovery sub-workflow */
+  .sub-wf{border:1px dashed var(--line);border-radius:var(--radius);padding:1.2rem;margin:.8rem 0}
+  .sub-wf-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:.6rem;text-align:center}
+
+  footer{text-align:center;padding:1rem;font-size:.72rem;color:var(--muted);border-top:1px solid var(--line)}
+  footer a{color:var(--ink);font-weight:600;text-decoration:none}
+
+  @media(max-width:700px){
+    .pipe,.arr-split{flex-direction:column;gap:.4rem}
+    .arr-row,.arr-down{display:none}
+    .arr-split .arr-branch{flex-direction:row}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>How Leibniz Works</h1>
+  <p>Workflow diagram &nbsp;·&nbsp; <a href="index.html">← Playground</a> &nbsp;·&nbsp; <a href="https://leibniz.streamlit.app/">Streamlit App</a></p>
+</header>
+
+<main>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="showMode('review')" id="tab-review">Review Mode</button>
+    <button class="mode-tab" onclick="showMode('discovery')" id="tab-discovery">Discovery Mode</button>
+    <button class="mode-tab" onclick="showMode('full')" id="tab-full">Full System</button>
+  </div>
+
+  <!-- ═══════════════ REVIEW MODE ═══════════════ -->
+  <div id="wf-review">
+
+    <p class="section-title">Input — Theorem &amp; Proof</p>
+
+    <!-- Input node -->
+    <div style="max-width:1000px;margin:0 auto">
+      <div class="node body-node">
+        <div class="node-title">📋 Theorem <span style="font-family:var(--mono)">T</span> + Proof <span style="font-family:var(--mono)">π</span></div>
+        <div class="node-sub">Uploaded as JSONL / PDF, or typed manually</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div><span class="arr-label">enters the pipeline</span></div>
+
+    <p class="section-title">Three Independent Gates</p>
+
+    <!-- Gate 1 -->
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">🔐 Gate 1 · Validity</div>
+        <div class="gate-mechanism">Lean 4 type‑check (exit 0)</div>
+        <div class="gate-mechanism">or encyclopedia pattern‑match</div>
+        <div class="gate-output" style="color:var(--ink)">● &nbsp;Certified &nbsp;|&nbsp; ◐ &nbsp;Skipped &nbsp;|&nbsp; ○ &nbsp;Rejected</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div></div>
+
+    <!-- Gate 2 -->
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">🧭 Gate 2 · Alignment</div>
+        <div class="gate-mechanism">Concept overlap score vs. encyclopedia</div>
+        <div class="gate-mechanism">Token match + known‑good proof boost</div>
+        <div class="gate-output" style="color:var(--ink)">Score ∈ [0.00, 1.00] &nbsp;→&nbsp; matched / missing concepts</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div></div>
+
+    <!-- Gate 3 with 3 sub-tiers -->
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">📖 Gate 3 · Reading</div>
+        <div class="gate-mechanism">Three graded tiers of human‑style scrutiny</div>
+        <div class="sub-wf">
+          <div class="sub-wf-label">Graded tiers</div>
+          <div class="pipe">
+            <div class="node" style="border-color:var(--ink)">
+              <div class="node-title">Easy</div>
+              <div class="node-sub">Surface syntax · typos · well‑formedness</div>
+            </div>
+            <div style="display:flex;align-items:center;padding:0 4px;color:var(--muted);font-weight:700">→</div>
+            <div class="node" style="border-color:var(--ink)">
+              <div class="node-title">Medium</div>
+              <div class="node-sub">Logic flow · tactic pre‑conditions</div>
+            </div>
+            <div style="display:flex;align-items:center;padding:0 4px;color:var(--muted);font-weight:700">→</div>
+            <div class="node" style="border-color:var(--ink)">
+              <div class="node-title">Hard</div>
+              <div class="node-sub">Deep correctness · edge cases · faithfulness</div>
+            </div>
+          </div>
+        </div>
+        <div class="gate-output" style="color:var(--ink)">per‑tier verdict → overall: PASS · WARN · FAIL</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div><span class="arr-label">all three must clear</span></div>
+
+    <!-- Verdict -->
+    <div style="max-width:1000px;margin:0 auto">
+      <div class="verdict-node pass">
+        <div class="node-title" style="font-size:1.1rem">◈ &nbsp;Final Verdict</div>
+        <div class="gate-output" style="font-size:.85rem">
+          <strong>PASS</strong> &nbsp;·&nbsp; proof clears all gates &nbsp;·&nbsp; certificate issued
+          <br><span style="color:var(--muted);font-weight:400">or</span>
+          <br><strong>ATTENTION</strong> &nbsp;·&nbsp; one or more gates flagged issues &nbsp;·&nbsp; review required
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DISCOVERY MODE ═══════════════ -->
+  <div id="wf-discovery" style="display:none">
+
+    <p class="section-title">Input — Seed Topic</p>
+
+    <div style="max-width:1000px;margin:0 auto">
+      <div class="node body-node">
+        <div class="node-title">🔍 Seed Topic</div>
+        <div class="node-sub">e.g. "linear algebra", "prime numbers", "set theory"</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div><span class="arr-label">encyclopedia lookup</span></div>
+
+    <p class="section-title">Three Stages</p>
+
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">1 · Discover</div>
+        <div class="node-sub">Propose <em>n</em> conjectures matching the seed</div>
+        <div class="gate-mechanism">keyword retrieval → encyclopedia entries</div>
+        <div class="gate-output">informal + Lean statements + rationale</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div></div>
+
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">2 · Prove</div>
+        <div class="node-sub">Generate <em>k</em> candidate tactic blocks per conjecture</div>
+        <div class="gate-mechanism">shape‑based templates: rfl / simp / ring / aesop</div>
+        <div class="gate-mechanism">or LLM sampling (HF / remote backend)</div>
+        <div class="gate-output"><em>k</em> candidate proof strings</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div></div>
+
+    <div class="pipe">
+      <div class="node gate-pass">
+        <div class="node-title">3 · Verify</div>
+        <div class="node-sub">Compile each candidate in Lean 4</div>
+        <div class="gate-mechanism">first passing proof → certified</div>
+        <div class="gate-mechanism">none pass → conjecture is unproven</div>
+        <div class="gate-output">certified theorems + unproven conjectures</div>
+      </div>
+    </div>
+
+    <div class="arr-row"><div class="arr-down"></div><span class="arr-label">output</span></div>
+
+    <div style="max-width:1000px;margin:0 auto">
+      <div class="verdict-node pass">
+        <div class="node-title">◈ &nbsp;Discovery Result</div>
+        <div class="gate-output">Certified: <em>m</em> theorems &nbsp;|&nbsp; Unproven: <em>n − m</em> conjectures</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ FULL SYSTEM ═══════════════ -->
+  <div id="wf-full" style="display:none">
+
+    <p class="section-title">Complete Architecture</p>
+
+    <div class="wf">
+      <!-- Input layer -->
+      <div class="pipe">
+        <div class="node" style="flex:1"><div class="node-title">📋 Manual Entry</div></div>
+        <div style="display:flex;align-items:center;padding:0 6px;color:var(--muted);font-weight:700">+</div>
+        <div class="node" style="flex:1"><div class="node-title">📦 JSONL Upload</div></div>
+        <div style="display:flex;align-items:center;padding:0 6px;color:var(--muted);font-weight:700">+</div>
+        <div class="node" style="flex:1"><div class="node-title">📑 PDF Upload</div></div>
+      </div>
+
+      <div class="arr-row"><div class="arr-down"></div><span class="arr-label">theorem + proof pairs</span></div>
+
+      <!-- Engine core -->
+      <div style="max-width:1000px;width:100%">
+        <div class="node body-node" style="background:var(--faint)">
+          <div class="node-title">🧮 Leibniz Engine</div>
+          <div class="node-sub" style="margin-top:.4rem">
+            <strong>Backends:</strong> Stub (deterministic, zero‑dep) &nbsp;|&nbsp; HF (local GPU) &nbsp;|&nbsp; Remote (API)
+          </div>
+        </div>
+      </div>
+
+      <div class="arr-split">
+        <div class="arr-branch">
+          <div class="arr-label">Review</div>
+          <div class="arr-v"></div>
+        </div>
+        <div class="arr-branch">
+          <div class="arr-label">Discovery</div>
+          <div class="arr-v"></div>
+        </div>
+      </div>
+
+      <div class="pipe">
+        <div class="node gate-pass" style="flex:1">
+          <div class="node-title">3‑Gate Review</div>
+          <div class="node-sub">Validity → Alignment → Reading</div>
+        </div>
+        <div class="node" style="flex:1;border:1px dashed var(--ink)">
+          <div class="node-title">Discover → Prove → Certify</div>
+          <div class="node-sub">Conjecture generation pipeline</div>
+        </div>
+      </div>
+
+      <div class="arr-row"><div class="arr-down"></div><span class="arr-label">results dispatched to</span></div>
+
+      <!-- Output surfaces -->
+      <div class="pipe">
+        <div class="node" style="flex:1"><div class="node-title">🌐 Streamlit App</div><div class="node-sub">leibniz.streamlit.app</div></div>
+        <div class="node" style="flex:1"><div class="node-title">🎮 Browser Playground</div><div class="node-sub">GitHub Pages</div></div>
+        <div class="node" style="flex:1"><div class="node-title">🤖 Gradio</div><div class="node-sub">HF Space / local</div></div>
+        <div class="node" style="flex:1"><div class="node-title">🖥 REST API</div><div class="node-sub">FastAPI :8430</div></div>
+      </div>
+
+      <div class="arr-row"><div class="arr-down"></div></div>
+
+      <!-- Knowledge -->
+      <div style="max-width:1000px;width:100%">
+        <div class="node" style="border-style:dashed;background:var(--faint)">
+          <div class="node-title">📚 Knowledge Base</div>
+          <div class="node-sub">
+            24 encyclopedia entries &nbsp;|&nbsp; 16 Lean 4 theorems (no sorry) &nbsp;|&nbsp; 44‑pair SFT corpus
+          </div>
+          <div class="node-sub" style="margin-top:.3rem">
+            Mathlib bridge (optional) &nbsp;|&nbsp; Qwen 2.5‑Math‑1.5B (1.54B params, CPU)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot"></div> Pass / certified</div>
+    <div class="leg-item"><div class="leg-dot skip"></div> Provisional / skipped</div>
+    <div class="leg-item"><div class="leg-dot fail"></div> Rejected / unproven</div>
+    <div class="leg-item" style="margin-left:1rem">▸ 3px border radius</div>
+    <div class="leg-item">▸ Inter + Playfair Display</div>
+    <div class="leg-item">▸ Monochrome</div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="https://leibniz.streamlit.app/">Streamlit App</a> · <a href="https://github.com/twomathematicians-code/leibniz">GitHub</a> · <a href="index.html">Playground</a>
+</footer>
+
+<script>
+function showMode(mode) {
+  ['review','discovery','full'].forEach(m => {
+    document.getElementById('wf-'+m).style.display = (m===mode) ? 'block' : 'none';
+    document.getElementById('tab-'+m).classList.toggle('active', m===mode);
+  });
+}
+</script>
+
+</body>
+</html>
