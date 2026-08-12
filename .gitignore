@@ -29,6 +29,7 @@ lean/lake-packages/
 
 # Testing
 .pytest_cache/
+.pytest_cache/*
 .eggs/
 
 # OS
