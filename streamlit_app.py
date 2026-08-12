@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from io import BytesIO
@@ -123,6 +124,7 @@ engine = st.session_state.engine
 enc = default_enc()
 
 SAMPLE_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "samples" / "linear_algebra.jsonl"
+SAMPLE_PDF = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "samples" / "linear_algebra_proofs.pdf"
 
 # ═══════════════════════════════════════════════════════════════════════
 # Examples & counter‑examples
@@ -182,28 +184,48 @@ EXAMPLES = {
 # ═══════════════════════════════════════════════════════════════════════
 
 def _parse_pdf(file_bytes: bytes) -> List[dict]:
+    """Line-based extractor: a line starting with `theorem <name>` opens a
+    statement; a following line starting with `by ` is its proof. Wrapped
+    statement lines (continuations) are merged. Prose containing the word
+    'theorem' is ignored because we anchor on the keyword at line start."""
     try:
         import pdfplumber  # type: ignore
     except ImportError:
         return []
-    rows: List[dict] = []
+
+    lines: List[str] = []
     with pdfplumber.open(BytesIO(file_bytes)) as pdf:
-        full_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-    chunks = full_text.split("\n\n")
-    for i, chunk in enumerate(chunks):
-        chunk = chunk.strip()
-        if not chunk:
-            continue
-        stmt, proof = "", ""
-        for line in chunk.split("\n"):
-            if "theorem" in line.lower() and not stmt:
-                stmt = line.strip()
-            elif "proof" in line.lower() or "by " in line.lower():
-                proof = line.strip()
-            elif proof:
-                proof += " " + line.strip()
-        if stmt:
-            rows.append({"name": f"pdf_{i+1}", "informal": "", "lean_statement": stmt, "lean_proof": proof, "domain": "general", "difficulty": "medium", "keywords": []})
+        for page in pdf.pages:
+            lines.extend((page.extract_text() or "").split("\n"))
+
+    rows: List[dict] = []
+    current: Optional[dict] = None
+    awaiting_proof = False
+
+    for line in lines:
+        s = line.strip()
+        if re.match(r"^theorem\s+\w+", s):
+            if current:
+                rows.append(current)
+            current = {"lean_statement": s, "lean_proof": "", "domain": "general",
+                       "difficulty": "medium", "keywords": []}
+            awaiting_proof = True
+        elif awaiting_proof and re.match(r"^by\s+", s):
+            if current is not None:
+                current["lean_proof"] = s
+            awaiting_proof = False
+        elif awaiting_proof and current is not None and s and not s.startswith("THEOREM"):
+            # continuation of a wrapped statement line (math/code only)
+            if any(op in s for op in ["*", "+", "=", "->", "=>", "(", ")", "<", ">", "≠", "λ"]):
+                current["lean_statement"] += " " + s
+
+    if current:
+        rows.append(current)
+
+    for i, r in enumerate(rows, 1):
+        m = re.match(r"^theorem\s+(\w+)", r["lean_statement"])
+        r["name"] = m.group(1) if m else f"pdf_{i}"
+        r["informal"] = ""
     return rows
 
 
@@ -261,10 +283,14 @@ st.sidebar.markdown(f"""
 
 mode = st.sidebar.radio("", ["Single Review", "Batch Upload", "Discovery", "About"], label_visibility="collapsed")
 
-st.sidebar.markdown("---")
+st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
 if SAMPLE_FILE.exists():
-    with open(SAMPLE_FILE) as f:
-        st.sidebar.download_button("Download LA sample · JSONL", f.read(), "linear_algebra.jsonl", "application/jsonl",
+    with open(SAMPLE_FILE, "rb") as f:
+        st.sidebar.download_button("Linear Algebra · JSONL", f.read(), "linear_algebra.jsonl", "application/jsonl",
+                                   use_container_width=True)
+if SAMPLE_PDF.exists():
+    with open(SAMPLE_PDF, "rb") as f:
+        st.sidebar.download_button("Linear Algebra · PDF (3 pages)", f.read(), "linear_algebra_proofs.pdf", "application/pdf",
                                    use_container_width=True)
 
 st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.app/)  \n[Browser playground](https://twomathematicians-code.github.io/leibniz/)  \n[GitHub](https://github.com/twomathematicians-code/leibniz)")
