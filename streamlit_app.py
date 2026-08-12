@@ -281,7 +281,7 @@ st.sidebar.markdown(f"""
 | Lean | {"available" if engine.lean.available else "provisional"} |
 """)
 
-mode = st.sidebar.radio("", ["Single Review", "Batch Upload", "Discovery", "About"], label_visibility="collapsed")
+mode = st.sidebar.radio("", ["Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
 
 st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
 if SAMPLE_FILE.exists():
@@ -290,7 +290,12 @@ if SAMPLE_FILE.exists():
                                    use_container_width=True)
 if SAMPLE_PDF.exists():
     with open(SAMPLE_PDF, "rb") as f:
-        st.sidebar.download_button("Linear Algebra · PDF (3 pages)", f.read(), "linear_algebra_proofs.pdf", "application/pdf",
+        st.sidebar.download_button("LA Proofs · PDF (3 pages)", f.read(), "linear_algebra_proofs.pdf", "application/pdf",
+                                   use_container_width=True)
+SAMPLE_PDF_BIG = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "samples" / "linear_algebra_big_theorems.pdf"
+if SAMPLE_PDF_BIG.exists():
+    with open(SAMPLE_PDF_BIG, "rb") as f:
+        st.sidebar.download_button("LA Big Theorems · PDF (5 pages)", f.read(), "linear_algebra_big_theorems.pdf", "application/pdf",
                                    use_container_width=True)
 
 st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.app/)  \n[Browser playground](https://twomathematicians-code.github.io/leibniz/)  \n[GitHub](https://github.com/twomathematicians-code/leibniz)")
@@ -448,6 +453,66 @@ elif mode == "Batch Upload":
                                       "pdf_results.json", "application/json", use_container_width=True)
             else:
                 st.caption("No theorem–proof pairs extracted. Try a JSONL file instead.")
+
+# ═══════════════════════════════════════════════════════════════════════
+# MODE: Formalize (NL → Lean)
+# ═══════════════════════════════════════════════════════════════════════
+
+elif mode == "Formalize":
+    st.markdown('<p class="brand-label">Autoformalization</p>', unsafe_allow_html=True)
+    st.markdown("## Natural Language → Lean 4")
+    st.markdown(
+        "Type an informal theorem. The engine recognises it against the encyclopedia "
+        "(knowledge-base-assisted formalization) and, for novel statements, asks the LLM "
+        "backend to translate. Each result references the corresponding Mathlib lemma."
+    )
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        examples_nl = [
+            "(custom)",
+            "The rank-nullity theorem: dim(range) + dim(kernel) = dim(V).",
+            "A matrix is invertible iff its determinant is nonzero.",
+            "det(A·B) = det(A)·det(B).",
+            "Every eigenvalue of a real symmetric matrix is real.",
+            "Cayley-Hamilton: a matrix satisfies its characteristic polynomial.",
+            "A linear map is injective iff its kernel is trivial.",
+        ]
+        choice = st.selectbox("Load example", examples_nl, label_visibility="collapsed")
+        default_nl = "" if choice == "(custom)" else choice
+        informal = st.text_area("Informal statement", value=default_nl, height=110,
+                                placeholder="e.g. The rank-nullity theorem...", label_visibility="collapsed")
+        go_f = st.button("Formalize", type="primary", use_container_width=True)
+
+    with c2:
+        if go_f and informal.strip():
+            r = engine.formalize(informal.strip())
+            st.markdown('<div class="brand-label">Result</div>', unsafe_allow_html=True)
+
+            src_icon = {"recognised": "●", "generated": "◐", "none": "○"}.get(r.source, "○")
+            st.markdown(f"**Source:** {src_icon} `{r.source}` &nbsp; **Confidence:** `{r.confidence:.2f}`")
+            if r.matched_entry:
+                st.markdown(f"**Recognised as:** `{r.matched_entry}`")
+
+            if r.lean_statement:
+                st.markdown('<div class="brand-label">Lean 4 statement</div>', unsafe_allow_html=True)
+                st.code(r.lean_statement, language="lean")
+            else:
+                st.caption("No Lean statement produced.")
+
+            if r.mathlib_refs:
+                st.markdown('<div class="brand-label">Mathlib references</div>', unsafe_allow_html=True)
+                for ref in r.mathlib_refs:
+                    st.markdown(f"- `{ref}`")
+
+            st.caption(r.notes)
+
+            # Optional: run the 3-gate review on the formalized statement
+            if r.lean_statement and st.button("Run 3-gate review on this statement", use_container_width=True):
+                rep = to_dict(engine.formalize_and_review(informal.strip()))
+                v = rep["validity"]; a = rep["alignment"]; rd = rep["reading"]
+                vmark = "●" if v.get("passed") is True else ("○" if v.get("passed") is False else "◐")
+                st.markdown(f"**Gate 1 Validity:** {vmark} &nbsp; **Gate 2 Alignment:** {a['score']:.2f} &nbsp; **Gate 3 Reading:** {rd['overall_verdict'].upper()}")
 
 # ═══════════════════════════════════════════════════════════════════════
 # MODE: Discovery

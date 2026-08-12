@@ -23,6 +23,7 @@ from .core.types import (
 from .llm.backend import BaseBackend, get_backend
 from .formal.lean_client import LeanClient
 from .stages import discover as _discover, prove as _prove, verify as _verify, align as _align, read as _read
+from .stages import formalize as _formalize, FormalizationResult
 
 
 class Engine:
@@ -86,6 +87,46 @@ class Engine:
             certified=certified, failed=failed,
         )
 
+    # ---------- FORMALIZE (NL → Lean) ----------
+
+    def formalize(self, informal: str) -> "FormalizationResult":
+        """Translate an informal mathematical statement into a candidate Lean 4 statement.
+
+        Recognition-first: matches against the encyclopedia; falls back to the
+        LLM backend for novel statements. Returns a FormalizationResult."""
+        return _formalize(informal, backend=self.backend)
+
+    def formalize_and_review(self, informal: str) -> GateReport:
+        """One-shot: informal statement → formal Lean statement → 3-gate review.
+
+        If formalization fails to produce a statement, returns a GateReport with
+        Gate 1 skipped and a note in the validity error."""
+        result = self.formalize(informal)
+        if not result.lean_statement:
+            t = Theorem(name=result.matched_entry or "unformalized",
+                        informal=informal, lean_statement=None, domain="general")
+            from .core.types import VerificationResult
+            rep = self.review(t, Proof(lean_tactics=None))
+            rep.validity = VerificationResult(
+                passed=None,
+                error=f"Autoformalization failed: {result.notes}",
+                lean_available=self.lean.available,
+            )
+            return rep
+        t = Theorem(
+            name=result.matched_entry or "formalized",
+            informal=informal,
+            lean_statement=result.lean_statement,
+            domain="linear_algebra",
+        )
+        rep = self.review(t, Proof(lean_tactics=None))
+        # Attach formalization provenance to the alignment rationale.
+        rep.alignment.rationale = (
+            f"[formalized via {result.source}, confidence {result.confidence:.2f}] "
+            + rep.alignment.rationale
+        )
+        return rep
+
 
 # --- module-level default engine ---
 
@@ -111,3 +152,11 @@ def discover_and_verify(seed: str, **kwargs) -> DiscoveryResult:
 
 def discover(seed: str, n: Optional[int] = None) -> List[Conjecture]:
     return get_engine().discover(seed, n)
+
+
+def formalize(informal: str) -> "FormalizationResult":
+    return get_engine().formalize(informal)
+
+
+def formalize_and_review(informal: str) -> GateReport:
+    return get_engine().formalize_and_review(informal)
