@@ -160,6 +160,7 @@
           <option value="algebra">algebra</option>
           <option value="number_theory">number theory</option>
           <option value="set_theory">set theory</option>
+          <option value="linear_algebra">linear algebra</option>
           <option value="general">general</option>
         </select>
       </div>
@@ -241,6 +242,39 @@ const ENCYCLOPEDIA = [
     stmt:"theorem infinitude_of_primes : ∀ n, ∃ p, p > n ∧ Nat.Prime p",
     proof:"", domain:"number_theory", difficulty:"hard",
     keywords:["primes","infinitude","number theory","euclid"] },
+  // --- Linear Algebra (UG level) ---
+  { name:"add_comm_vec",       informal:"v + w = w + v  (ℝⁿ vectors)",
+    stmt:"theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
+    proof:"by ext i; exact add_comm (v i) (w i)", domain:"linear_algebra", difficulty:"easy",
+    keywords:["vector","addition","commutativity","pointwise","linear algebra"] },
+  { name:"smul_add_vec",       informal:"c·(v+w) = c·v + c·w",
+    stmt:"theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w",
+    proof:"by ext i; exact mul_add c (v i) (w i)", domain:"linear_algebra", difficulty:"medium",
+    keywords:["scalar multiplication","distributivity","linear algebra","vector space"] },
+  { name:"one_smul_vec",       informal:"1·v = v  (unity law)",
+    stmt:"theorem one_smul_vec (v : Fin n → ℝ) : (1 : ℝ) • v = v",
+    proof:"by ext i; simp", domain:"linear_algebra", difficulty:"easy",
+    keywords:["scalar multiplication","identity","linear algebra","unity"] },
+  { name:"eigenvalue_id",      informal:"Identity map: every nonzero v is eigenvector with eigenvalue 1",
+    stmt:"theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v",
+    proof:"by simp", domain:"linear_algebra", difficulty:"medium",
+    keywords:["eigenvalue","identity matrix","linear transformation","spectral theory"] },
+  { name:"add_neg_vec",        informal:"v + (-v) = 0  (additive inverse)",
+    stmt:"theorem add_neg_vec (v : Fin n → ℝ) : v + (-v) = 0",
+    proof:"by ext i; simp", domain:"linear_algebra", difficulty:"easy",
+    keywords:["vector","negation","additive inverse","linear algebra"] },
+  { name:"smul_assoc_vec",     informal:"c·(d·v) = (c·d)·v",
+    stmt:"theorem smul_assoc_vec (c d : ℝ) (v : Fin n → ℝ) : c • (d • v) = (c * d) • v",
+    proof:"by ext i; simp [mul_assoc]", domain:"linear_algebra", difficulty:"medium",
+    keywords:["scalar multiplication","associativity","linear algebra","field"] },
+  { name:"determinant_2x2",    informal:"det[[a,b],[c,d]] = ad−bc  (2×2 determinant)",
+    stmt:"-- No core statement (hard: needs matrix representation)",
+    proof:"", domain:"linear_algebra", difficulty:"hard",
+    keywords:["determinant","matrix","invertibility","linear algebra"] },
+  { name:"linear_combination_zero", informal:"If a·v+b·w=0 with a,b≠0 then v,w are linearly dependent",
+    stmt:"theorem linear_combination_zero (a b : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) (v w : Fin 2 → ℝ) (h : a • v + b • w = 0) : ∃ c : ℝ, w = c • v",
+    proof:"", domain:"linear_algebra", difficulty:"hard",
+    keywords:["linear dependence","linear combination","linear algebra","vector space"] },
 ];
 
 // ============================================================================

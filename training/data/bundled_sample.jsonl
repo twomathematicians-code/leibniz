@@ -28,3 +28,17 @@
 {"name":"even_zero","statement":"theorem even_zero : Even (0 : Nat)","proof":"by rw [Nat.even_zero]","domain":"number_theory","difficulty":"medium"}
 {"name":"dvd_refl_nat","statement":"theorem dvd_refl_nat (a : Nat) : a ∣ a","proof":"by rw [Nat.dvd_refl]","domain":"number_theory","difficulty":"medium"}
 {"name":"one_dvd","statement":"theorem one_dvd (a : Nat) : 1 ∣ a","proof":"by rw [Nat.one_dvd]","domain":"number_theory","difficulty":"medium"}
+{"name":"add_comm_vec","statement":"theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v","proof":"by ext i; exact add_comm (v i) (w i)","domain":"linear_algebra","difficulty":"easy"}
+{"name":"add_assoc_vec","statement":"theorem add_assoc_vec (u v w : Fin n → ℝ) : (u + v) + w = u + (v + w)","proof":"by ext i; exact add_assoc (u i) (v i) (w i)","domain":"linear_algebra","difficulty":"easy"}
+{"name":"zero_add_vec","statement":"theorem zero_add_vec (v : Fin n → ℝ) : 0 + v = v","proof":"by ext i; simp","domain":"linear_algebra","difficulty":"easy"}
+{"name":"add_zero_vec","statement":"theorem add_zero_vec (v : Fin n → ℝ) : v + 0 = v","proof":"by ext i; simp","domain":"linear_algebra","difficulty":"easy"}
+{"name":"add_neg_vec","statement":"theorem add_neg_vec (v : Fin n → ℝ) : v + (-v) = 0","proof":"by ext i; simp","domain":"linear_algebra","difficulty":"easy"}
+{"name":"smul_add_vec","statement":"theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w","proof":"by ext i; exact mul_add c (v i) (w i)","domain":"linear_algebra","difficulty":"medium"}
+{"name":"add_smul_vec","statement":"theorem add_smul_vec (c d : ℝ) (v : Fin n → ℝ) : (c + d) • v = c • v + d • v","proof":"by ext i; exact add_mul c d (v i)","domain":"linear_algebra","difficulty":"medium"}
+{"name":"smul_assoc_vec","statement":"theorem smul_assoc_vec (c d : ℝ) (v : Fin n → ℝ) : c • (d • v) = (c * d) • v","proof":"by ext i; simp [mul_assoc]","domain":"linear_algebra","difficulty":"medium"}
+{"name":"one_smul_vec","statement":"theorem one_smul_vec (v : Fin n → ℝ) : (1 : ℝ) • v = v","proof":"by ext i; simp","domain":"linear_algebra","difficulty":"easy"}
+{"name":"eigenvalue_id","statement":"theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v","proof":"by simp","domain":"linear_algebra","difficulty":"medium"}
+{"name":"add_comm_r","statement":"theorem add_comm_r (x y : ℝ) : x + y = y + x","proof":"by rw [add_comm]","domain":"linear_algebra","difficulty":"easy"}
+{"name":"mul_comm_r","statement":"theorem mul_comm_r (x y : ℝ) : x * y = y * x","proof":"by rw [mul_comm]","domain":"linear_algebra","difficulty":"easy"}
+{"name":"mul_assoc_r","statement":"theorem mul_assoc_r (x y z : ℝ) : (x * y) * z = x * (y * z)","proof":"by rw [mul_assoc]","domain":"linear_algebra","difficulty":"easy"}
+{"name":"distrib_left","statement":"theorem distrib_left (x y z : ℝ) : x * (y + z) = x * y + x * z","proof":"by rw [mul_add]","domain":"linear_algebra","difficulty":"medium"}

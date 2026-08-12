@@ -22,4 +22,4 @@ package «Leibniz» where
 @[default_target]
 lean_lib Leibniz where
   -- Only build the core modules; MathlibBridge is opt-in and excluded here.
-  roots := #[`Leibniz.Basic, `Leibniz.Examples]
+  roots := #[`Leibniz.Basic, `Leibniz.Examples, `Leibniz.LinearAlgebra]

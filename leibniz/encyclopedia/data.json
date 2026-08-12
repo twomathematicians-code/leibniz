@@ -113,6 +113,126 @@
       "rationale": "Idempotence of union; a basic law of set algebra."
     },
     {
+      "name": "add_comm_vec",
+      "informal": "Vector addition is commutative: for all vectors v, w in ℝⁿ, v + w = w + v.",
+      "lean_statement": "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
+      "lean_proof": "by ext i; exact add_comm (v i) (w i)",
+      "domain": "linear_algebra",
+      "difficulty": "easy",
+      "keywords": ["vector", "addition", "commutativity", "pointwise", "linear algebra"],
+      "rationale": "Pointwise addition of functions is commutative because ℝ addition is commutative."
+    },
+    {
+      "name": "add_assoc_vec",
+      "informal": "Vector addition is associative: for all vectors u, v, w in ℝⁿ, (u + v) + w = u + (v + w).",
+      "lean_statement": "theorem add_assoc_vec (u v w : Fin n → ℝ) : (u + v) + w = u + (v + w)",
+      "lean_proof": "by ext i; exact add_assoc (u i) (v i) (w i)",
+      "domain": "linear_algebra",
+      "difficulty": "easy",
+      "keywords": ["vector", "addition", "associativity", "linear algebra"],
+      "rationale": "Pointwise addition inherits associativity from ℝ."
+    },
+    {
+      "name": "zero_add_vec",
+      "informal": "The zero vector is a left identity: for every vector v in ℝⁿ, 0 + v = v.",
+      "lean_statement": "theorem zero_add_vec (v : Fin n → ℝ) : 0 + v = v",
+      "lean_proof": "by ext i; simp",
+      "domain": "linear_algebra",
+      "difficulty": "easy",
+      "keywords": ["zero vector", "identity", "linear algebra"],
+      "rationale": "The zero function plus any function is that function."
+    },
+    {
+      "name": "add_neg_vec",
+      "informal": "Every vector has an additive inverse: v + (-v) = 0 for every v in ℝⁿ.",
+      "lean_statement": "theorem add_neg_vec (v : Fin n → ℝ) : v + (-v) = 0",
+      "lean_proof": "by ext i; simp",
+      "domain": "linear_algebra",
+      "difficulty": "easy",
+      "keywords": ["vector", "negation", "additive inverse", "linear algebra"],
+      "rationale": "A vector added to its pointwise negation yields the zero vector."
+    },
+    {
+      "name": "smul_add_vec",
+      "informal": "Scalar multiplication distributes over vector addition: c · (v + w) = c·v + c·w.",
+      "lean_statement": "theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w",
+      "lean_proof": "by ext i; exact mul_add c (v i) (w i)",
+      "domain": "linear_algebra",
+      "difficulty": "medium",
+      "keywords": ["scalar multiplication", "distributivity", "linear algebra", "vector space"],
+      "rationale": "Scalars distribute over pointwise addition because ℝ multiplication distributes over addition."
+    },
+    {
+      "name": "add_smul_vec",
+      "informal": "Scalar multiplication distributes over scalar addition: (c + d)·v = c·v + d·v.",
+      "lean_statement": "theorem add_smul_vec (c d : ℝ) (v : Fin n → ℝ) : (c + d) • v = c • v + d • v",
+      "lean_proof": "by ext i; exact add_mul c d (v i)",
+      "domain": "linear_algebra",
+      "difficulty": "medium",
+      "keywords": ["scalar multiplication", "distributivity", "field", "linear algebra"],
+      "rationale": "ℝ field addition distributes over multiplication; lifts pointwise to vectors."
+    },
+    {
+      "name": "smul_assoc_vec",
+      "informal": "Scalar multiplication is associative: c · (d · v) = (c·d) · v.",
+      "lean_statement": "theorem smul_assoc_vec (c d : ℝ) (v : Fin n → ℝ) : c • (d • v) = (c * d) • v",
+      "lean_proof": "by ext i; simp [mul_assoc]",
+      "domain": "linear_algebra",
+      "difficulty": "medium",
+      "keywords": ["scalar multiplication", "associativity", "linear algebra", "field"],
+      "rationale": "ℝ multiplication is associative; lifts pointwise to scalar multiplication of vectors."
+    },
+    {
+      "name": "one_smul_vec",
+      "informal": "The scalar 1 is the identity for scalar multiplication: 1·v = v.",
+      "lean_statement": "theorem one_smul_vec (v : Fin n → ℝ) : (1 : ℝ) • v = v",
+      "lean_proof": "by ext i; simp",
+      "domain": "linear_algebra",
+      "difficulty": "easy",
+      "keywords": ["scalar multiplication", "identity", "linear algebra", "unity"],
+      "rationale": "Multiplying each component by 1 leaves it unchanged — the vector-space unity law."
+    },
+    {
+      "name": "linear_combination_zero",
+      "informal": "If vectors v and w satisfy a·v + b·w = 0 with a, b nonzero for all components, then v and w are linearly dependent.",
+      "lean_statement": "theorem linear_combination_zero (a b : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) (v w : Fin 2 → ℝ) (h : a • v + b • w = 0) : ∃ c : ℝ, w = c • v",
+      "lean_proof": "",
+      "domain": "linear_algebra",
+      "difficulty": "hard",
+      "keywords": ["linear dependence", "linear combination", "linear algebra", "vector space"],
+      "rationale": "A core concept of linear algebra — expressed as a hard discovery target requiring existential reasoning over ℝⁿ components."
+    },
+    {
+      "name": "determinant_2x2",
+      "informal": "The determinant of a 2×2 matrix [[a,b],[c,d]] is ad − bc. A matrix is invertible iff its determinant is nonzero.",
+      "lean_statement": "-- determinant_2x2 (a b c d : ℝ) : det [[a,b],[c,d]] = a*d - b*c",
+      "lean_proof": "",
+      "domain": "linear_algebra",
+      "difficulty": "hard",
+      "keywords": ["determinant", "matrix", "invertibility", "linear algebra"],
+      "rationale": "Determinants are the gateway to eigenvalues and invertibility; a hard formalization target needing matrix representations."
+    },
+    {
+      "name": "eigenvalue_id",
+      "informal": "Every nonzero vector is an eigenvector of the identity transformation with eigenvalue 1.",
+      "lean_statement": "theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v",
+      "lean_proof": "by simp",
+      "domain": "linear_algebra",
+      "difficulty": "medium",
+      "keywords": ["eigenvalue", "identity matrix", "linear transformation", "spectral theory"],
+      "rationale": "The simplest spectral theorem check — the identity acts as scalar 1 on every vector."
+    },
+    {
+      "name": "basis_standard_rn",
+      "informal": "Any vector in ℝⁿ can be expressed uniquely as a linear combination of the standard basis vectors e₁, …, eₙ.",
+      "lean_statement": "-- Every v: Fin n → ℝ can be written as Σ_i (v i) · e_i where e_i j = 1 if i=j else 0.",
+      "lean_proof": "",
+      "domain": "linear_algebra",
+      "difficulty": "hard",
+      "keywords": ["basis", "linear combination", "span", "linear algebra", "standard basis"],
+      "rationale": "The standard basis is the foundational spanning set; formalizing full unique representation is a hard theorem."
+    },
+    {
       "name": "rh_critical_line",
       "informal": "(Domain example) The first few non-trivial zeros of the Riemann zeta function lie on the critical line Re(s)=1/2.",
       "lean_statement": "-- Stated numerically, not formally: zeros at gamma = 14.1347, 21.0220, 25.0109, ...",

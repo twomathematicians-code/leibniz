@@ -71,6 +71,12 @@ class Encyclopedia:
             hay.update(t.lower() for t in e.get("keywords", []))
             hay.update(_tokenize(e.get("informal", "")))
             score = sum(1 for tok in q if tok in hay)
+            # Exact name match gets a large boost so `search("add_smul_vec")`
+            # always returns add_smul_vec first, even when keywords overlap.
+            if e.get("name", "").lower() == query.lower():
+                score += 100
+            elif query.lower() in e.get("name", "").lower():
+                score += 50
             if score > 0:
                 scored.append((score, e))
         scored.sort(key=lambda x: (-x[0], self.entries.index(x[1])))
