@@ -1,8 +1,9 @@
 [theme]
-primaryColor = "#4338ca"
+# Two Mathematicians brand — strictly monochrome
+primaryColor = "#000000"
 backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f8f9fb"
-textColor = "#1a1a2e"
+secondaryBackgroundColor = "#f3f4f6"
+textColor = "#000000"
 font = "sans-serif"
 
 [browser]

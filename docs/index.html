@@ -3,533 +3,320 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🧮 Leibniz — Proof Checker Playground</title>
+<title>Leibniz — Proof Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #ffffff; --fg: #1a1a2e; --muted: #6b7280;
-    --surface: #f8f9fb; --border: #e5e7eb;
-    --pass: #059669; --warn: #d97706; --fail: #dc2626;
-    --accent: #4338ca; --accent-light: #eef2ff;
-    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+    --ink: #000000;
+    --slate: #1f2937;
+    --muted: #6b7280;
+    --faint: #f3f4f6;
+    --line: #e5e7eb;
+    --paper: #ffffff;
+    --mono: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
+    --radius: 3px;
+    --shadow: 0 1px 2px rgba(0,0,0,.05);
   }
-  @media(prefers-color-scheme:dark) {
-    :root { --bg: #0f172a; --fg: #e2e8f0; --muted: #94a3b8;
-            --surface: #1e293b; --border: #334155;
-            --accent-light: #1e1b4b; }
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    background:var(--bg);color:var(--fg);line-height:1.6;
-    min-height:100vh;
+    font-family: 'Inter', sans-serif; color: var(--ink); background: var(--paper);
+    line-height: 1.6; min-height: 100vh;
   }
+
   header {
-    text-align:center;padding:2.5rem 1rem 2rem;
-    background:linear-gradient(135deg,var(--accent-light),var(--surface));
-    border-bottom:1px solid var(--border);
+    text-align: center; padding: 3rem 1rem 2rem;
+    background: var(--paper); border-bottom: 1px solid var(--line);
   }
-  header h1 {font-size:2rem;font-weight:800;margin-bottom:.3rem}
-  header p {color:var(--muted);max-width:640px;margin:0 auto;font-size:.95rem}
-  header .badge {
-    display:inline-block;margin-top:.75rem;padding:.2em .8em;
-    border-radius:99px;font-size:.78rem;font-weight:600;
-    background:var(--accent);color:#fff;
+  header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: .2rem; }
+  header p { color: var(--muted); max-width: 580px; margin: 0 auto; font-size: .92rem; }
+  header .accent { font-family: 'Playfair Display', serif; font-style: italic; }
+  header .label {
+    display: inline-block; margin-top: .8rem; padding: .15em .7em;
+    border: 1px solid var(--ink); font-size: .68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px; border-radius: var(--radius);
   }
-  main {max-width:880px;margin:0 auto;padding:1.5rem 1rem 3rem}
 
-  /* --- sections --- */
+  main { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
   .section {
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--radius);padding:1.4rem;margin-bottom:1.2rem;
-    box-shadow:var(--shadow);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 1.4rem; margin-bottom: 1rem; background: var(--paper);
+    box-shadow: var(--shadow);
   }
-  .section h2 {font-size:1.15rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem}
-  .section h2 .icon {font-size:1.3rem}
+  .section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: .5rem; letter-spacing: -0.3px; }
 
-  /* --- inputs --- */
-  .input-grid {display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
-  @media(max-width:600px){.input-grid{grid-template-columns:1fr}}
-  label {display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:.25rem}
+  .example-bar { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .6rem; }
+  .chip {
+    font-size: .72rem; padding: .2em .55em; border-radius: var(--radius);
+    border: 1px solid var(--line); background: var(--paper); cursor: pointer;
+    transition: .1s; font-weight: 500; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--ink); background: var(--faint); }
+  .chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+  @media(max-width:600px){ .input-grid { grid-template-columns: 1fr; } }
+
+  label {
+    display: block; font-size: .68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--muted); margin-bottom: .2rem;
+  }
   input, textarea, select {
-    width:100%;padding:.6em .75em;border:1px solid var(--border);
-    border-radius:7px;font-size:.9rem;font-family: inherit;
-    background:var(--bg);color:var(--fg);
-    transition:border-color .15s;
+    width: 100%; padding: .5em .65em; border: 1px solid var(--line);
+    border-radius: var(--radius); font-size: .88rem; font-family: var(--mono);
+    background: var(--paper); color: var(--ink); transition: border-color .12s;
   }
   input:focus, textarea:focus, select:focus {
-    outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);
+    outline: none; border-color: var(--ink); box-shadow: 0 0 0 2px rgba(0,0,0,.06);
   }
-  textarea {resize:vertical;min-height:60px}
+  textarea { resize: vertical; min-height: 50px; }
 
-  /* --- examples --- */
-  .example-bar {
-    display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.7rem;
-  }
-  .example-chip {
-    font-size:.78rem;padding:.25em .65em;border-radius:99px;
-    border:1px solid var(--border);background:var(--bg);color:var(--fg);
-    cursor:pointer;transition:.12s;white-space:nowrap;
-  }
-  .example-chip:hover {border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-  .example-chip.active {background:var(--accent);color:#fff;border-color:var(--accent)}
-
-  /* --- buttons --- */
   .btn {
-    display:inline-flex;align-items:center;gap:.35em;padding:.55em 1.3em;
-    font-size:.92rem;font-weight:600;border:none;border-radius:7px;
-    cursor:pointer;transition:.12s;font-family:inherit;
+    display: inline-flex; align-items: center; gap: .3em; padding: .5em 1.2em;
+    font-size: .85rem; font-weight: 600; font-family: 'Inter',sans-serif;
+    border: 1px solid var(--ink); border-radius: var(--radius); cursor: pointer;
+    background: var(--ink); color: var(--paper); transition: .1s;
+    text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .btn-primary {background:var(--accent);color:#fff}
-  .btn-primary:hover {opacity:.9;transform:translateY(-1px)}
-  .btn-row {display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.8rem}
+  .btn:hover { background: var(--slate); border-color: var(--slate); }
+  .btn-outline { background: var(--paper); color: var(--ink); }
+  .btn-outline:hover { background: var(--faint); }
+  .btn-row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
 
-  /* --- results --- */
-  #results {display:none}
-  #results.visible {display:block}
+  #results { display: none; }
+  #results.visible { display: block; }
 
   .gate-card {
-    border:1px solid var(--border);border-radius:var(--radius);
-    padding:1rem;margin-bottom:.7rem;background:var(--bg);
-    transition:.3s;opacity:0;transform:translateY(8px);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 1rem; margin-bottom: .6rem; background: var(--paper);
+    opacity: 0; transform: translateY(6px); transition: .25s;
   }
-  .gate-card.show {opacity:1;transform:translateY(0)}
-  .gate-card .gate-header {
-    display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:.5rem;flex-wrap:wrap;gap:.3rem;
-  }
-  .gate-card .gate-name {font-weight:700;font-size:1.02rem}
+  .gate-card.show { opacity: 1; transform: translateY(0); }
+  .gate-card .gate-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; }
+  .gate-name { font-weight: 700; font-size: .98rem; }
   .verdict {
-    display:inline-block;padding:.15em .7em;border-radius:99px;
-    font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    display: inline-block; padding: .1em .55em; border-radius: var(--radius);
+    font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
   }
-  .verdict.pass {background:#d1fae5;color:var(--pass)}
-  .verdict.warn {background:#fef3c7;color:var(--warn)}
-  .verdict.fail {background:#fee2e2;color:var(--fail)}
-  .gate-detail {font-size:.88rem;color:var(--muted);line-height:1.5}
+  .verdict.pass { border: 1px solid var(--ink); color: var(--ink); }
+  .verdict.warn { border: 1px solid var(--muted); color: var(--muted); }
+  .verdict.fail { border: 1px solid var(--line); color: var(--line); text-decoration: line-through; }
 
-  .align-bar {background:#e5e7eb;height:8px;border-radius:4px;margin:.4rem 0;overflow:hidden}
-  .align-fill {height:100%;border-radius:4px;background:var(--accent);transition:width .5s ease}
-  .reading-tiers {display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-top:.4rem}
-  @media(max-width:500px){.reading-tiers{grid-template-columns:1fr}}
-  .tier-badge {text-align:center;padding:.4rem .3rem;border-radius:7px;font-size:.8rem;font-weight:600;border:1px solid var(--border)}
+  .gate-detail { font-size: .85rem; color: var(--slate); line-height: 1.5; }
 
-  .overall-bar {
-    margin-top:1rem;padding:.9rem 1.2rem;border-radius:var(--radius);
-    font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:.5rem;
+  .align-bar { background: var(--line); height: 6px; border-radius: var(--radius); margin: .3rem 0; overflow: hidden; }
+  .align-fill { height: 100%; border-radius: var(--radius); background: var(--ink); transition: width .4s ease; }
+
+  .tiers { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .4rem; margin-top: .3rem; }
+  @media(max-width:500px){ .tiers { grid-template-columns: 1fr; } }
+  .tier-badge {
+    text-align: center; padding: .3rem; border-radius: var(--radius);
+    font-size: .78rem; font-weight: 600; border: 1px solid var(--line);
   }
-  .overall-bar.overall-pass {background:#d1fae5;color:var(--pass);border:1px solid #a7f3d0}
-  .overall-bar.overall-attn {background:#fef3c7;color:var(--warn);border:1px solid #fde68a}
-  .overall-bar.overall-fail {background:#fee2e2;color:var(--fail);border:1px solid #fecaca}
 
-  .certificate-line {font-size:.8rem;color:var(--muted);margin-top:.3rem;font-family:monospace}
+  .overall {
+    margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--radius);
+    font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: .4rem;
+    border: 2px solid var(--ink);
+  }
+  .overall.ov-pass { background: var(--paper); color: var(--ink); }
+  .overall.ov-attn { border-style: dashed; color: var(--slate); }
 
-  /* --- spinner --- */
-  @keyframes spin {to{transform:rotate(360deg)}}
-  .spinner {display:none;width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:.5em}
-  .thinking .spinner {display:inline-block}
+  .cert { font-size: .75rem; color: var(--muted); margin-top: .2rem; font-family: var(--mono); }
 
-  footer {text-align:center;padding:.8rem;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border)}
-  footer a {color:var(--accent);text-decoration:none}
+  footer {
+    text-align: center; padding: .8rem; font-size: .72rem; color: var(--muted);
+    border-top: 1px solid var(--line); font-weight: 400;
+  }
+  footer a { color: var(--ink); font-weight: 600; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🧮 Leibniz Proof Checker</h1>
-  <p>An interactive simulation of Leibniz's three-gate proof review — validity, conceptual alignment, and graded reading — running directly in your browser. No install, no server.</p>
-  <span class="badge">v0.1.0 · Browser Simulation</span>
+  <h1>Leibniz</h1>
+  <p>A <span class="accent">Universal Calculator for Truth</span> — interactive three‑gate proof verification running in your browser.</p>
+  <span class="label">No install · No server · 18 examples</span>
 </header>
 
 <main>
 
-  <!-- INPUT SECTION -->
-  <section class="section" id="input-section">
-    <h2><span class="icon">📝</span> Theorem &amp; Proof</h2>
-
+  <section class="section">
+    <h2>Theorem &amp; Proof</h2>
     <div class="example-bar" id="example-bar"></div>
 
     <div class="input-grid">
-      <div>
-        <label for="name">Name</label>
-        <input id="name" placeholder="e.g. two_plus_two">
-      </div>
-      <div>
-        <label for="domain">Domain</label>
+      <div><label for="name">Name</label><input id="name" placeholder="add_comm_vec"></div>
+      <div><label for="domain">Domain</label>
         <select id="domain">
+          <option value="linear_algebra">linear algebra</option>
           <option value="arithmetic">arithmetic</option>
           <option value="algebra">algebra</option>
           <option value="number_theory">number theory</option>
           <option value="set_theory">set theory</option>
-          <option value="linear_algebra">linear algebra</option>
           <option value="general">general</option>
         </select>
       </div>
     </div>
 
-    <label for="stmt">Lean 4 Statement</label>
-    <textarea id="stmt" rows="2" placeholder="theorem two_plus_two : 2 + 2 = 4"></textarea>
+    <label for="stmt">Lean 4 statement</label>
+    <textarea id="stmt" rows="2" placeholder="theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v"></textarea>
 
-    <label for="proof" style="margin-top:.6rem">Proof (tactic block / proof term)</label>
-    <textarea id="proof" rows="3" placeholder="by rfl"></textarea>
+    <label for="proof">Proof</label>
+    <textarea id="proof" rows="3" placeholder="by ext i; exact add_comm (v i) (w i)"></textarea>
 
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="runReview()" id="run-btn">
-        <span class="spinner"></span> 🔍 Run 3-Gate Review
-      </button>
-      <button class="btn" style="background:var(--surface);border:1px solid var(--border)" onclick="clearForm()">
-        ✕ Clear
-      </button>
+      <button class="btn" onclick="runReview()" id="run-btn">Run 3‑Gate Review</button>
+      <button class="btn btn-outline" onclick="clearForm()">Clear</button>
     </div>
   </section>
 
-  <!-- RESULTS SECTION -->
   <div id="results">
-    <section class="section">
-      <h2><span class="icon">📊</span> Review Results</h2>
-      <div id="gates"></div>
-    </section>
+    <section class="section"><h2>Results</h2><div id="gates"></div></section>
   </div>
 
 </main>
 
 <footer>
-  Built as part of the <a href="https://github.com/twomathematicians-code/leibniz">Leibniz Engine</a> · MIT License · No server, your data stays in your browser.
+  Two Mathematicians · <a href="https://github.com/twomathematicians-code/leibniz">GitHub</a> · MIT License
 </footer>
 
 <script>
-// ============================================================================
-// Encyclopedia (mirrors leibniz/encyclopedia/data.json — client-side subset)
-// ============================================================================
-
 const ENCYCLOPEDIA = [
-  { name:"two_plus_two",       informal:"2 + 2 = 4",
-    stmt:"theorem two_plus_two : 2 + 2 = 4",
-    proof:"by rfl", domain:"arithmetic", difficulty:"easy",
-    keywords:["addition","arithmetic","numbers","sum"] },
-  { name:"three_times_three",  informal:"3 × 3 = 9",
-    stmt:"theorem three_times_three : 3 * 3 = 9",
-    proof:"by rfl", domain:"arithmetic", difficulty:"easy",
-    keywords:["multiplication","arithmetic","numbers","product"] },
-  { name:"ten_minus_four",     informal:"10 − 4 = 6",
-    stmt:"theorem ten_minus_four : 10 - 4 = 6",
-    proof:"by rfl", domain:"arithmetic", difficulty:"easy",
-    keywords:["subtraction","arithmetic","numbers"] },
-  { name:"add_zero_left",      informal:"∀ n : Nat, n + 0 = n",
-    stmt:"theorem add_zero_left (n : Nat) : n + 0 = n",
-    proof:"by rfl", domain:"algebra", difficulty:"easy",
-    keywords:["addition","identity","algebra","natural numbers"] },
-  { name:"add_comm_nat",       informal:"∀ a b : Nat, a + b = b + a",
-    stmt:"theorem add_comm_nat (a b : Nat) : a + b = b + a",
-    proof:"by rw [Nat.add_comm]", domain:"algebra", difficulty:"medium",
-    keywords:["addition","commutativity","algebra","natural numbers"] },
-  { name:"mul_one_right",      informal:"∀ n : Nat, n * 1 = n",
-    stmt:"theorem mul_one_right (n : Nat) : n * 1 = n",
-    proof:"by rfl", domain:"algebra", difficulty:"medium",
-    keywords:["multiplication","identity","algebra","natural numbers"] },
-  { name:"even_square_is_even",informal:"(2n)² = 4n²",
-    stmt:"theorem even_square_is_even (n : Nat) : (2 * n) ^ 2 = 4 * (n ^ 2)",
-    proof:"by rw [mul_pow, mul_assoc]; ring", domain:"number_theory", difficulty:"medium",
-    keywords:["parity","divisibility","squares","number theory","algebra"] },
-  { name:"set_union_self",     informal:"s ∪ s = s",
-    stmt:"theorem set_union_self (α : Type) (s : Set α) : s ∪ s = s",
-    proof:"by ext x; simp [Set.or_self]", domain:"set_theory", difficulty:"easy",
-    keywords:["sets","union","idempotence","set theory"] },
-  { name:"zero_lt_one",        informal:"0 < 1",
-    stmt:"theorem zero_lt_one : 0 < (1 : Nat)",
-    proof:"by decide", domain:"order", difficulty:"easy",
-    keywords:["order","natural numbers","positivity"] },
-  { name:"infinitude_of_primes", informal:"There are infinitely many primes.",
-    stmt:"theorem infinitude_of_primes : ∀ n, ∃ p, p > n ∧ Nat.Prime p",
-    proof:"", domain:"number_theory", difficulty:"hard",
-    keywords:["primes","infinitude","number theory","euclid"] },
-  // --- Linear Algebra (UG level) ---
-  { name:"add_comm_vec",       informal:"v + w = w + v  (ℝⁿ vectors)",
-    stmt:"theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
-    proof:"by ext i; exact add_comm (v i) (w i)", domain:"linear_algebra", difficulty:"easy",
-    keywords:["vector","addition","commutativity","pointwise","linear algebra"] },
-  { name:"smul_add_vec",       informal:"c·(v+w) = c·v + c·w",
-    stmt:"theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w",
-    proof:"by ext i; exact mul_add c (v i) (w i)", domain:"linear_algebra", difficulty:"medium",
-    keywords:["scalar multiplication","distributivity","linear algebra","vector space"] },
-  { name:"one_smul_vec",       informal:"1·v = v  (unity law)",
-    stmt:"theorem one_smul_vec (v : Fin n → ℝ) : (1 : ℝ) • v = v",
-    proof:"by ext i; simp", domain:"linear_algebra", difficulty:"easy",
-    keywords:["scalar multiplication","identity","linear algebra","unity"] },
-  { name:"eigenvalue_id",      informal:"Identity map: every nonzero v is eigenvector with eigenvalue 1",
-    stmt:"theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v",
-    proof:"by simp", domain:"linear_algebra", difficulty:"medium",
-    keywords:["eigenvalue","identity matrix","linear transformation","spectral theory"] },
-  { name:"add_neg_vec",        informal:"v + (-v) = 0  (additive inverse)",
-    stmt:"theorem add_neg_vec (v : Fin n → ℝ) : v + (-v) = 0",
-    proof:"by ext i; simp", domain:"linear_algebra", difficulty:"easy",
-    keywords:["vector","negation","additive inverse","linear algebra"] },
-  { name:"smul_assoc_vec",     informal:"c·(d·v) = (c·d)·v",
-    stmt:"theorem smul_assoc_vec (c d : ℝ) (v : Fin n → ℝ) : c • (d • v) = (c * d) • v",
-    proof:"by ext i; simp [mul_assoc]", domain:"linear_algebra", difficulty:"medium",
-    keywords:["scalar multiplication","associativity","linear algebra","field"] },
-  { name:"determinant_2x2",    informal:"det[[a,b],[c,d]] = ad−bc  (2×2 determinant)",
-    stmt:"-- No core statement (hard: needs matrix representation)",
-    proof:"", domain:"linear_algebra", difficulty:"hard",
-    keywords:["determinant","matrix","invertibility","linear algebra"] },
-  { name:"linear_combination_zero", informal:"If a·v+b·w=0 with a,b≠0 then v,w are linearly dependent",
-    stmt:"theorem linear_combination_zero (a b : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) (v w : Fin 2 → ℝ) (h : a • v + b • w = 0) : ∃ c : ℝ, w = c • v",
-    proof:"", domain:"linear_algebra", difficulty:"hard",
-    keywords:["linear dependence","linear combination","linear algebra","vector space"] },
+  {name:"two_plus_two",informal:"2+2=4",stmt:"theorem two_plus_two : 2 + 2 = 4",proof:"by rfl",domain:"arithmetic",difficulty:"easy",kw:["addition","arithmetic","numbers"]},
+  {name:"three_times_three",informal:"3×3=9",stmt:"theorem three_times_three : 3 * 3 = 9",proof:"by rfl",domain:"arithmetic",difficulty:"easy",kw:["multiplication","arithmetic","numbers"]},
+  {name:"ten_minus_four",informal:"10−4=6",stmt:"theorem ten_minus_four : 10 - 4 = 6",proof:"by rfl",domain:"arithmetic",difficulty:"easy",kw:["subtraction","arithmetic"]},
+  {name:"add_zero_left",informal:"n+0=n",stmt:"theorem add_zero_left (n : Nat) : n + 0 = n",proof:"by rfl",domain:"algebra",difficulty:"easy",kw:["addition","identity","algebra"]},
+  {name:"add_comm_nat",informal:"a+b=b+a",stmt:"theorem add_comm_nat (a b : Nat) : a + b = b + a",proof:"by rw [Nat.add_comm]",domain:"algebra",difficulty:"medium",kw:["addition","commutativity","algebra"]},
+  {name:"mul_one_right",informal:"n·1=n",stmt:"theorem mul_one_right (n : Nat) : n * 1 = n",proof:"by rfl",domain:"algebra",difficulty:"medium",kw:["multiplication","identity","algebra"]},
+  {name:"even_square_is_even",informal:"(2n)²=4n²",stmt:"theorem even_square_is_even (n : Nat) : (2 * n) ^ 2 = 4 * (n ^ 2)",proof:"by rw [mul_pow, mul_assoc]; ring",domain:"number_theory",difficulty:"medium",kw:["parity","divisibility","squares"]},
+  {name:"set_union_self",informal:"s∪s=s",stmt:"theorem set_union_self (α : Type) (s : Set α) : s ∪ s = s",proof:"by ext x; simp [Set.or_self]",domain:"set_theory",difficulty:"easy",kw:["sets","union","idempotence"]},
+  {name:"zero_lt_one",informal:"0<1",stmt:"theorem zero_lt_one : 0 < (1 : Nat)",proof:"by decide",domain:"order",difficulty:"easy",kw:["order","positivity"]},
+  {name:"infinitude_of_primes",informal:"Infinite primes.",stmt:"theorem infinitude_of_primes : ∀ n, ∃ p, p > n ∧ Nat.Prime p",proof:"",domain:"number_theory",difficulty:"hard",kw:["primes","infinitude","euclid"]},
+  {name:"add_comm_vec",informal:"v+w=w+v",stmt:"theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",proof:"by ext i; exact add_comm (v i) (w i)",domain:"linear_algebra",difficulty:"easy",kw:["vector","addition","commutativity"]},
+  {name:"smul_add_vec",informal:"c·(v+w)=c·v+c·w",stmt:"theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w",proof:"by ext i; exact mul_add c (v i) (w i)",domain:"linear_algebra",difficulty:"medium",kw:["scalar","distributivity","vector space"]},
+  {name:"one_smul_vec",informal:"1·v=v",stmt:"theorem one_smul_vec (v : Fin n → ℝ) : (1 : ℝ) • v = v",proof:"by ext i; simp",domain:"linear_algebra",difficulty:"easy",kw:["identity","unity","scalar"]},
+  {name:"eigenvalue_id",informal:"id has eigenvalue 1 on nonzero vectors",stmt:"theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v",proof:"by simp",domain:"linear_algebra",difficulty:"medium",kw:["eigenvalue","identity","spectral"]},
+  {name:"add_neg_vec",informal:"v+(-v)=0",stmt:"theorem add_neg_vec (v : Fin n → ℝ) : v + (-v) = 0",proof:"by ext i; simp",domain:"linear_algebra",difficulty:"easy",kw:["negation","additive inverse"]},
+  {name:"smul_assoc_vec",informal:"c·(d·v)=(c·d)·v",stmt:"theorem smul_assoc_vec (c d : ℝ) (v : Fin n → ℝ) : c • (d • v) = (c * d) • v",proof:"by ext i; simp [mul_assoc]",domain:"linear_algebra",difficulty:"medium",kw:["scalar","associativity","field"]},
+  {name:"determinant_2x2",informal:"det[[a,b],[c,d]]=ad−bc",stmt:"-- Hard: needs matrix representation in Lean",proof:"",domain:"linear_algebra",difficulty:"hard",kw:["determinant","matrix","invertibility"]},
+  {name:"linear_combination_zero",informal:"a·v+b·w=0, a,b≠0 ⇒ v,w dependent",stmt:"theorem linear_combination_zero (a b : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) (v w : Fin 2 → ℝ) (h : a • v + b • w = 0) : ∃ c : ℝ, w = c • v",proof:"",domain:"linear_algebra",difficulty:"hard",kw:["linear dependence","linear combination"]},
 ];
 
-// ============================================================================
-// Gate engines (client-side heuristics)
-// ============================================================================
+function tok(s) { return [...(s||'').toLowerCase().matchAll(/[a-zA-Z_][a-zA-Z0-9_]*/g)].map(m=>m[0]); }
 
-function tokenize(s) {
-  return [...(s||'').toLowerCase().matchAll(/[a-zA-Z_][a-zA-Z0-9_]*/g)].map(m=>m[0]);
-}
+function gate1(stmt, proof) {
+  if (!stmt.trim()) return {passed:null, cert:"No statement.", error:"Empty.", comments:["No formal statement."]};
+  if (!proof.trim()) return {passed:null, cert:"No proof.", error:"Empty.", comments:["No proof."]};
 
-function gate1_validity(stmt, proof) {
-  // Gate 1 — Validity: surface-level heuristic checks
-  const comments = [];
-  let passed = null; // null=skipped, true=pass, false=fail
-  let certificate = null;
-
-  if (!stmt.trim()) {
-    return { passed:null, certificate:"No statement provided.", error:"Empty statement.", comments:["No formal statement to check."] };
-  }
-  if (!proof.trim()) {
-    return { passed:null, certificate:"No proof provided.", error:"Empty proof.", comments:["No proof to check."] };
-  }
-
-  // Look up in encyclopedia for known-good match
   const entry = ENCYCLOPEDIA.find(e => e.stmt.trim() === stmt.trim());
   if (entry && entry.proof.trim() === proof.trim()) {
-    comments.push("Proof matches the certified encyclopedia entry — structurally sound.");
-    if (proof.includes("sorry")) {
-      passed = false;
-      certificate = "REJECTED: proof contains 'sorry'";
-      comments.push("⚠️ Proof uses `sorry` — an admitted, unproven goal.");
-    } else {
-      passed = true;
-      certificate = "PROVISIONAL ✓ (pattern-matched: encyclopedia proof)";
-      comments.push("(Install elan + Lean 4 for a real formal certificate.)");
-    }
-    return { passed, certificate, error: passed ? null : certificate, comments, formal:false };
+    if (proof.includes("sorry")) return {passed:false, cert:"REJECTED · sorry", error:"`sorry` is an unproven goal.", comments:["❌ `sorry` — incomplete."], formal:false};
+    return {passed:true, cert:"PROVISIONAL · encyclopedia match", error:null, comments:["Proof matches certified entry · structurally sound.","Install elan + Lean 4 for a formal certificate."], formal:false};
   }
-
-  // Heuristic: detect `by sorry`
-  if (proof.trim() === "by sorry" || proof.includes("sorry")) {
-    return { passed:false, certificate:"REJECTED: sorry", error:"Proof contains 'sorry'.", comments:["❌ `sorry` means the proof is incomplete — it cannot be certified."], formal:false };
-  }
-
-  // Starts with `by` or is a proof term — looks plausible
-  if (/^by\s/.test(proof.trim()) || /^[a-zA-Z_]/.test(proof.trim())) {
-    comments.push("Surface syntax looks plausible (starts with tactic `by` or a proof term).");
-    comments.push("⚠️ Cannot formally verify without the Lean 4 toolchain — result is heuristic only.");
-    return { passed:null, certificate:"HEURISTIC (surface check only)", error:null, comments, formal:false };
-  }
-
-  return { passed:null, certificate:"UNKNOWN", error:"Could not parse proof shape.", comments:["Proof format not recognized."], formal:false };
+  if (proof.trim()==="by sorry"||proof.includes("sorry")) return {passed:false, cert:"REJECTED · sorry", error:"`sorry` — incomplete.", comments:["❌ `sorry` — proof is not complete."], formal:false};
+  if (/^by\s/.test(proof.trim())) return {passed:null, cert:"HEURISTIC · surface check only", error:null, comments:["Surface syntax plausible · cannot formally verify without Lean 4."], formal:false};
+  return {passed:null, cert:"UNKNOWN", error:"Format not recognized.", comments:["Proof format not recognized."], formal:false};
 }
 
-function gate2_alignment(name, stmt, proof, domain) {
-  // Gate 2 — Alignment: concept overlap with encyclopedia entry for this domain
-  const entry = ENCYCLOPEDIA.find(e => e.name === name.trim()) || { keywords:[], domain:domain||"general" };
-  const expected = [...new Set([...entry.keywords, ...(entry.domain||domain||"").replace(/_/g,' ').split(' ').filter(Boolean)])].map(w=>w.toLowerCase());
-
-  const hay = new Set([...tokenize(stmt), ...tokenize(proof), ...tokenize(name), ...tokenize(domain||'')]);
-  const matched = expected.filter(c => hay.has(c) || [...hay].some(h => c.length>=4 && h.length>=4 && c.slice(0,4)===h.slice(0,4)));
-  const missing = expected.filter(c => !matched.includes(c));
-  const score = expected.length ? Math.round(matched.length / expected.length * 100) / 100 : 0.5;
-
-  // Boost if proof matches known-good
-  let finalScore = score;
-  let rationale = `Concept overlap: ${matched.length}/${expected.length} concepts matched.`;
-  if (entry && entry.proof.trim() === proof.trim()) {
-    finalScore = Math.min(1, score + 0.5);
-    rationale += " Boosted +0.5: proof reproduces the certified encyclopedia proof.";
-  }
-  return { score:Math.round(finalScore*100)/100, matched, missing, rationale };
+function gate2(name, stmt, proof, domain) {
+  const entry = ENCYCLOPEDIA.find(e => e.name===name.trim()) || {kw:[],domain:domain||"general"};
+  const exp = [...new Set([...entry.kw, ...(entry.domain||domain||"").replace(/_/g,' ').split(' ').filter(Boolean)])].map(w=>w.toLowerCase());
+  const hay = new Set([...tok(stmt),...tok(proof),...tok(name),...tok(domain||'')]);
+  const match = exp.filter(c => hay.has(c)||[...hay].some(h=>c.length>=4&&h.length>=4&&c.slice(0,4)===h.slice(0,4)));
+  const miss = exp.filter(c=>!match.includes(c));
+  let sc = exp.length ? Math.round(match.length/exp.length*100)/100 : 0.5;
+  let rat = `Concept overlap: ${match.length}/${exp.length}.`;
+  if (entry && entry.proof.trim()===proof.trim()) { sc = Math.min(1,sc+0.5); rat += " Boosted · proof matches encyclopedia."; }
+  return {score:Math.round(sc*100)/100, matched:match, missing:miss, rationale:rat};
 }
 
-function gate3_reading(proof, difficulty) {
-  // Gate 3 — Graded reading: three tiers of human-style review
+function gate3(proof) {
   const tac = (proof||'').trim();
   const tiers = [];
-  let overall = "pass";
+  if (!tac) tiers.push({tier:"easy",verdict:"fail",comments:["No proof supplied."]});
+  else if (tac==="by sorry"||tac.includes("sorry")) tiers.push({tier:"easy",verdict:"fail",comments:["Uses `sorry` — unproven goal."]});
+  else if (/^by\s/.test(tac)) tiers.push({tier:"easy",verdict:"pass",comments:["Well‑formed tactic block."]});
+  else tiers.push({tier:"easy",verdict:"warn",comments:["Proof term present · verify type."]});
 
-  // EASY — surface & syntax
-  if (!tac) {
-    tiers.push({ tier:"easy", verdict:"fail", comments:["No proof supplied."] });
-  } else if (tac === "by sorry" || tac.includes("sorry")) {
-    tiers.push({ tier:"easy", verdict:"fail", comments:["Proof uses `sorry` — an admitted, unproven goal."] });
-  } else if (/^by\s/.test(tac)) {
-    tiers.push({ tier:"easy", verdict:"pass", comments:["Well-formed tactic block; surface syntax looks fine."] });
-  } else {
-    tiers.push({ tier:"easy", verdict:"warn", comments:["Proof term present; verify it has the expected type."] });
-  }
+  const ent = ENCYCLOPEDIA.find(e=>e.proof.trim()===tac);
+  if (ent) tiers.push({tier:"medium",verdict:"pass",comments:["Matches known‑good proof · logic flow sound."]});
+  else if (tac.includes("rw [")||tac.includes("simp")||tac.includes("induction")||tac.includes("ring")) tiers.push({tier:"medium",verdict:"pass",comments:["Recognised tactic · intermediate goals likely resolve."]});
+  else if (!tac) tiers.push({tier:"medium",verdict:"fail",comments:["No proof to evaluate."]});
+  else tiers.push({tier:"medium",verdict:"warn",comments:["Cannot confirm each pre‑condition · review intermediate goals."]});
 
-  // MEDIUM — logic flow
-  const entry = ENCYCLOPEDIA.find(e => e.proof.trim() === tac);
-  if (entry) {
-    tiers.push({ tier:"medium", verdict:"pass", comments:["Tactic sequence matches the known-good encyclopedia proof; logic flow is sound."] });
-  } else if (tac.includes("rw [") || tac.includes("simp") || tac.includes("induction") || tac.includes("ring")) {
-    tiers.push({ tier:"medium", verdict:"pass", comments:["Uses recognized rewrite/simplification tactics; intermediate goals likely resolve."] });
-  } else if (!tac) {
-    tiers.push({ tier:"medium", verdict:"fail", comments:["No proof to evaluate at this tier."] });
-  } else {
-    tiers.push({ tier:"medium", verdict:"warn", comments:["Could not confirm each tactic's preconditions; review intermediate goals."] });
-  }
+  if (ent) tiers.push({tier:"hard",verdict:"pass",comments:["Certified encyclopedia proof · minimal, faithful, edge‑case‑aware."]});
+  else if (!tac) tiers.push({tier:"hard",verdict:"fail",comments:["No proof at deepest tier."]});
+  else tiers.push({tier:"hard",verdict:"warn",comments:["Plausible but not independently verified · recommend formal Lean check."]});
 
-  // HARD — deep correctness
-  if (entry) {
-    tiers.push({ tier:"hard", verdict:"pass", comments:["Proof matches the certified encyclopedia proof — minimal, conceptually faithful, edge cases covered."] });
-  } else if (!tac) {
-    tiers.push({ tier:"hard", verdict:"fail", comments:["No proof to assess at the hardest tier."] });
-  } else {
-    tiers.push({ tier:"hard", verdict:"warn", comments:["Plausible but not independently verified at the deep tier. Recommend a full formal (Lean) check."] });
-  }
-
-  if (tiers.some(t=>t.verdict==="fail")) overall = "fail";
-  else if (tiers.some(t=>t.verdict==="warn")) overall = "warn";
-  else overall = "pass";
-  return { tiers, overall_verdict:overall };
+  const ov = tiers.some(t=>t.verdict==="fail") ? "fail" : tiers.some(t=>t.verdict==="warn") ? "warn" : "pass";
+  return {tiers, overall_verdict:ov};
 }
 
-// ============================================================================
-// Rendering
-// ============================================================================
+function verdictHTML(v) { return `<span class="verdict ${v}">${v}</span>`; }
 
-function verdictHTML(v) {
-  return `<span class="verdict ${v}">${v}</span>`;
-}
+function render(g1,g2,g3) {
+  const c = document.getElementById('gates');
+  const overallPass = (g1.passed===true||g1.passed===null) && g2.score>=0.5 && g3.overall_verdict!=="fail";
+  const v1 = g1.passed===true?"pass":g1.passed===false?"fail":"warn";
+  const v2 = g2.score>=0.5?"pass":g2.score>=0.3?"warn":"fail";
 
-function renderGates(g1, g2, g3, duration) {
-  const container = document.getElementById('gates');
-  const passed = g1.passed;
-  const overallPass = (passed === true || passed === null) && g2.score >= 0.5 && g3.overall_verdict !== "fail";
+  let h = '';
+  h += `<div class="gate-card"><div class="gate-header"><span class="gate-name">Gate 1 · Validity</span>${verdictHTML(v1)}</div><div class="gate-detail">${g1.comments.map(x=>`<div>${x}</div>`).join('')}<div class="cert">${g1.cert||''}</div></div></div>`;
+  h += `<div class="gate-card"><div class="gate-header"><span class="gate-name">Gate 2 · Alignment</span>${verdictHTML(v2)}</div><div class="gate-detail"><div>Score: <strong>${g2.score.toFixed(2)}</strong> / 1.00</div><div class="align-bar"><div class="align-fill" style="width:${(g2.score*100).toFixed(0)}%"></div></div><div>Matched: <strong>${g2.matched.length?g2.matched.join(', '):'(none)'}</strong></div><div style="color:var(--muted)">Missing: ${g2.missing.length?g2.missing.join(', '):'(none)'}</div><div style="margin-top:.2rem;font-size:.8rem">${g2.rationale}</div></div></div>`;
+  h += `<div class="gate-card"><div class="gate-header"><span class="gate-name">Gate 3 · Reading</span>${verdictHTML(g3.overall_verdict)}</div><div class="tiers">${g3.tiers.map(t=>`<div class="tier-badge"><div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">${t.tier}</div>${verdictHTML(t.verdict)}<div style="font-size:.72rem;margin-top:.15rem;line-height:1.3">${t.comments[0]||''}</div></div>`).join('')}</div></div>`;
 
-  let html = '';
+  const ovCls = overallPass ? "ov-pass" : "ov-attn";
+  const ovIcon = overallPass ? "◈" : "◇";
+  const ovTxt = overallPass ? "PASSED — all three gates clear" : "ATTENTION — one or more gates flagged issues";
+  h += `<div class="overall ${ovCls}"><span style="font-size:1.3rem">${ovIcon}</span> ${ovTxt}</div>`;
 
-  // Gate 1
-  const v1txt = passed===true ? "pass" : passed===false ? "fail" : "warn";
-  html += `<div class="gate-card" style="animation-delay:0s">
-    <div class="gate-header"><span class="gate-name">🔐 Gate 1 — Validity</span>${verdictHTML(v1txt)}</div>
-    <div class="gate-detail">
-      ${g1.comments.map(c => `<div>${c}</div>`).join('')}
-      <div class="certificate-line">${g1.certificate||''}</div>
-    </div>
-  </div>`;
-
-  // Gate 2
-  const v2txt = g2.score >= 0.5 ? "pass" : g2.score >= 0.3 ? "warn" : "fail";
-  html += `<div class="gate-card" style="animation-delay:0.15s">
-    <div class="gate-header"><span class="gate-name">🧭 Gate 2 — Alignment</span>${verdictHTML(v2txt)}</div>
-    <div class="gate-detail">
-      <div>Score: <strong>${g2.score.toFixed(2)}</strong> / 1.00</div>
-      <div class="align-bar"><div class="align-fill" style="width:${(g2.score*100).toFixed(0)}%"></div></div>
-      <div>Matched: <strong>${g2.matched.length ? g2.matched.join(', ') : '(none)'}</strong></div>
-      <div style="color:var(--warn)">Missing: ${g2.missing.length ? g2.missing.join(', ') : '(none)'}</div>
-      <div style="margin-top:.25rem;font-size:.82rem">${g2.rationale}</div>
-    </div>
-  </div>`;
-
-  // Gate 3
-  html += `<div class="gate-card" style="animation-delay:0.3s">
-    <div class="gate-header"><span class="gate-name">📖 Gate 3 — Reading</span>${verdictHTML(g3.overall_verdict)}</div>
-    <div class="gate-detail reading-tiers">
-      ${g3.tiers.map(t => `<div class="tier-badge" style="border-color:${t.verdict==='pass'?'#a7f3d0':t.verdict==='fail'?'#fecaca':'#fde68a'};background:${t.verdict==='pass'?'#d1fae511':t.verdict==='fail'?'#fee2e211':'#fef3c711'}">
-        <div style="font-size:.7rem;color:var(--muted)">${t.tier.toUpperCase()}</div>
-        ${verdictHTML(t.verdict)}
-        <div style="font-size:.75rem;margin-top:.2rem;line-height:1.3">${t.comments[0]||''}</div>
-      </div>`).join('')}
-    </div>
-  </div>`;
-
-  // Overall
-  const ovClass = overallPass ? "overall-pass" : (passed===false||g3.overall_verdict==="fail") ? "overall-fail" : "overall-attn";
-  const ovIcon = overallPass ? "✅" : "⚠️";
-  const ovText = overallPass ? "OVERALL: PASS — proof accepted by all gates" : "OVERALL: ATTENTION — one or more gates flagged issues";
-  html += `<div class="overall-bar ${ovClass}">
-    <span style="font-size:1.4rem">${ovIcon}</span> ${ovText}
-  </div>`;
-
-  container.innerHTML = html;
+  c.innerHTML = h;
   document.getElementById('results').classList.add('visible');
-  container.scrollIntoView({behavior:'smooth',block:'center'});
-
-  // Stagger animation
-  setTimeout(() => {
-    container.querySelectorAll('.gate-card').forEach(c => c.classList.add('show'));
-  }, 50);
+  setTimeout(()=>{c.querySelectorAll('.gate-card').forEach(x=>x.classList.add('show'))},40);
+  c.scrollIntoView({behavior:'smooth',block:'center'});
 }
-
-// ============================================================================
-// Actions
-// ============================================================================
 
 function runReview() {
-  const name = document.getElementById('name').value.trim();
   const stmt = document.getElementById('stmt').value.trim();
   const proof = document.getElementById('proof').value.trim();
-  const domain = document.getElementById('domain').value;
-
-  if (!stmt || !proof) {
-    alert("Please enter both a Lean statement and a proof.");
-    return;
-  }
-
-  const btn = document.getElementById('run-btn');
-  btn.classList.add('thinking');
-  btn.disabled = true;
-
-  // Simulate processing delay for visual feedback (gates animate in)
-  setTimeout(() => {
-    const g1 = gate1_validity(stmt, proof);
-    const g2 = gate2_alignment(name, stmt, proof, domain);
-    const g3 = gate3_reading(proof, "medium");
-
-    renderGates(g1, g2, g3);
-
-    btn.classList.remove('thinking');
-    btn.disabled = false;
-  }, 400);
+  if (!stmt||!proof) { alert("Enter both a Lean statement and a proof."); return; }
+  const g1 = gate1(stmt, proof);
+  const g2 = gate2(document.getElementById('name').value, stmt, proof, document.getElementById('domain').value);
+  const g3 = gate3(proof);
+  render(g1,g2,g3);
 }
 
-function loadExample(entry) {
-  document.getElementById('name').value = entry.name;
-  document.getElementById('stmt').value = entry.stmt;
-  document.getElementById('proof').value = entry.proof;
-  document.getElementById('domain').value = entry.domain;
-  // Highlight active chip
-  document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
-  const chip = document.querySelector(`.example-chip[data-name="${entry.name}"]`);
-  if (chip) chip.classList.add('active');
+function load(e) {
+  document.getElementById('name').value = e.name;
+  document.getElementById('stmt').value = e.stmt;
+  document.getElementById('proof').value = e.proof;
+  document.getElementById('domain').value = e.domain;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.chip[data-name="${e.name}"]`)?.classList.add('active');
 }
 
 function clearForm() {
-  ['name','stmt','proof'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('domain').value = 'arithmetic';
+  ['name','stmt','proof'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('domain').value='linear_algebra';
   document.getElementById('results').classList.remove('visible');
-  document.getElementById('gates').innerHTML = '';
-  document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('gates').innerHTML='';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
 }
 
-// ============================================================================
-// Init
-// ============================================================================
-
-function init() {
+(function init(){
   const bar = document.getElementById('example-bar');
-  ENCYCLOPEDIA.forEach((entry, i) => {
-    const chip = document.createElement('span');
-    chip.className = 'example-chip';
-    chip.textContent = entry.name.replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
-    chip.dataset.name = entry.name;
-    chip.title = entry.informal;
-    chip.addEventListener('click', () => loadExample(entry));
-    bar.appendChild(chip);
+  ENCYCLOPEDIA.forEach(e=>{
+    const c = document.createElement('span');
+    c.className='chip'; c.textContent=e.name.replace(/_/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+    c.dataset.name=e.name; c.title=e.informal||'';
+    c.addEventListener('click',()=>load(e));
+    bar.appendChild(c);
   });
-}
-
-document.addEventListener('DOMContentLoaded', init);
+})();
 </script>
 
 </body>
