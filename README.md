@@ -1,47 +1,49 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/Lean-4.14.0-brightgreen?logo=lean" alt="Lean 4">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Tests-53%2F53-success" alt="Tests">
-  <img src="https://img.shields.io/badge/Streamlit-live-000000?logo=streamlit&logoColor=white" alt="Streamlit">
-  <img src="https://img.shields.io/badge/Pages-live-000000?logo=githubpages&logoColor=white" alt="Pages">
-  <img src="https://img.shields.io/badge/HuggingFace-Space-FF9D00?logo=huggingface" alt="HF Space">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/Lean-4.14.0-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/Tests-53%2F53-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/License-MIT-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/Streamlit-live-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/Pages-live-000000?style=flat-square">
 </p>
 
-<h1 align="center">🧮 Leibniz</h1>
-<h3 align="center"><em>A Universal Calculator for Truth</em></h3>
+<h1 align="center" style="font-weight:800;letter-spacing:-1px;">Leibniz</h1>
+
+<p align="center"><em>A Universal Calculator for Truth</em></p>
 
 <p align="center">
-  <strong>Automated mathematical proof verification</strong> — three escalating gates of scrutiny<br>
+  Automated mathematical proof verification — three escalating gates of scrutiny<br>
   powered by a formal verification engine, a knowledge base of certified theorems, and a language model.
 </p>
 
 <p align="center">
-  <a href="https://leibniz.streamlit.app/">🌐 Streamlit App</a> ·
-  <a href="https://twomathematicians-code.github.io/leibniz/">🌐 Browser Demo</a> ·
-  <a href="#-what-it-does">📐 Overview</a> ·
-  <a href="#-quick-start">🚀 Quick Start</a> ·
-  <a href="#-mathematical-domains">📚 Domains</a> ·
-  <a href="#-examples--counter-examples">🔬 Examples</a>
+  <a href="https://leibniz.streamlit.app/">Streamlit App</a> &nbsp;·&nbsp;
+  <a href="https://twomathematicians-code.github.io/leibniz/">Browser Demo</a> &nbsp;·&nbsp;
+  <a href="#overview">Overview</a> &nbsp;·&nbsp;
+  <a href="#quick-start">Quick Start</a> &nbsp;·&nbsp;
+  <a href="#mathematical-domains">Domains</a> &nbsp;·&nbsp;
+  <a href="#how-it-works">How It Works</a>
 </p>
 
 ---
 
-## 📐 What It Does
+## ◈ OVERVIEW
 
 Given a mathematical theorem $T$ and a candidate proof $\pi$, the Leibniz engine subjects $(\mspace{1mu} T, \pi \mspace{1mu})$ to **three independent gates**:
 
 | Gate | Question | Mechanism |
 |------|----------|-----------|
-| **🔐 Validity** | *Is $\pi$ logically sound?* | Lean 4 type‑check (exit‑0 = certified) or encyclopedia pattern‑match |
-| **🧭 Alignment** | *Does $\pi$ address $T$'s concepts?* | Concept‑overlap score $\in [0, 1]$ against the knowledge‑base entry for $T$'s domain |
-| **📖 Reading** | *How does $\pi$ hold up under human‑style scrutiny?* | Three graded tiers — easy, medium, hard — each returning a verdict and critique |
+| **Validity** | *Is $\pi$ logically sound?* | Lean 4 type‑check (exit‑0 = certified) or encyclopedia pattern‑match |
+| **Alignment** | *Does $\pi$ address $T$'s concepts?* | Concept‑overlap score $\in [0, 1]$ against the knowledge‑base entry for $T$'s domain |
+| **Reading** | *How does $\pi$ hold up under human‑style scrutiny?* | Three graded tiers — easy, medium, hard — each returning a verdict and critique |
 
 A proof **passes** only when it clears all three gates. The engine also runs in **discovery mode**: seed a topic → propose conjectures → generate candidate proofs → certify the first that compiles.
 
+**Verdict indicators** &nbsp; `●` pass &nbsp; `◐` skip / provisional &nbsp; `○` reject
+
 ---
 
-## 🚀 Quick Start
+## ◈ QUICK START
 
 ```bash
 git clone https://github.com/twomathematicians-code/leibniz.git
@@ -57,24 +59,22 @@ python scripts/demo.py --seed "linear algebra"
 # API server — http://localhost:8430/docs
 python -m uvicorn api.main:app --port 8430
 
-# Gradio app — http://localhost:7860
-python app/app.py
-
 # Run tests
 PYTHONPATH=. pytest tests -q
 ```
 
 ---
 
-## 🧮 Mathematical Domains
+## ◈ MATHEMATICAL DOMAINS
 
 The encyclopedia ships with certified theorems across five domains. Each entry includes an informal statement, a Lean 4 formalisation, and a verified proof.
 
 ### Linear Algebra $(12)$
+
 Vector‑space axioms on $\mathbb{R}^n$ (pointwise): commutativity, associativity, distributivity of scalar multiplication, unity law, additive inverses, eigenvalue of the identity map.
 
-| Theorem | Statement | Difficulty |
-|---------|-----------|------------|
+| Theorem | Statement | Tier |
+|---------|-----------|------|
 | `add_comm_vec` | $\mathbf{v} + \mathbf{w} = \mathbf{w} + \mathbf{v}$ | easy |
 | `add_assoc_vec` | $(\mathbf{u}+\mathbf{v})+\mathbf{w} = \mathbf{u}+(\mathbf{v}+\mathbf{w})$ | easy |
 | `zero_add_vec` | $\mathbf{0} + \mathbf{v} = \mathbf{v}$ | easy |
@@ -91,48 +91,53 @@ Vector‑space axioms on $\mathbb{R}^n$ (pointwise): commutativity, associativit
 > *Marked entries are **discovery targets** — stated in the encyclopedia but awaiting a full formal proof.
 
 ### Arithmetic $(9)$
+
 Natural‑number identities: $2+2=4$, $3\times3=9$, $10-4=6$, $20/4=5$, $12\%5=2$, $2^5=32$, $3^3=27$, $100-99=1$, $0+0=0$.
 
 ### Algebra $(9)$
+
 Identities and structural laws over $\mathbb{N}$: $n+0=n$, $n\cdot0=0$, $n\cdot1=n$, commutativity and associativity of $+$ and $\times$, $\mathrm{succ}(n)=n+1$, $a+a=2a$, cancellation.
 
 ### Number Theory $(4)$
+
 Divisibility, primes, and parity: $1\mid a$, $a\mid a$, evenness of zero, squared even is divisible by four. Discovery targets: infinitude of primes, Fermat's little theorem, Bertrand's postulate.
 
 ### Order / Set Theory $(4)$
+
 $0<1$, $0\leq1$, $\mathrm{succ}(n)>0$, $n\leq n+1$, $n\leq n$; $S\cup S=S$ (idempotence of union).
 
 ### Analytic Number Theory $(1)$
+
 Riemann Hypothesis — critical‑line zeros (domain connector to the companion RH toolkit).
 
 ---
 
-## 🔬 Examples & Counter‑Examples
+## ◈ EXAMPLES &amp; COUNTER‑EXAMPLES
 
 The engine distinguishes between valid proofs, misaligned proofs, and outright failures. Below are examples users can paste directly into the Streamlit / Gradio app.
 
-### ✅ Valid — passes all 3 gates
+### ● Valid — passes all 3 gates
 
 | Theorem | Proof | Gates |
 |---------|-------|-------|
-| `add_comm_vec` | `by ext i; exact add_comm (v i) (w i)` | ✅ ✅ ✅ |
-| `two_plus_two` | `by rfl` | ✅ ✅ ✅ |
-| `add_comm_nat` | `by rw [Nat.add_comm]` | ✅ ✅ ✅ |
+| `add_comm_vec` | `by ext i; exact add_comm (v i) (w i)` | ● ● ● |
+| `two_plus_two` | `by rfl` | ● ● ● |
+| `add_comm_nat` | `by rw [Nat.add_comm]` | ● ● ● |
 
-### ❌ Counter‑example — fails Gate 1 (Validity)
+### ○ Counter‑example — fails Gate 1 (Validity)
 
 | Theorem | Proof | Failure |
 |---------|-------|---------|
 | `two_plus_two` | `by sorry` | `sorry` is an admitted, unproven goal — Lean rejects it |
 | `add_comm_vec` | `by not_a_tactic` | Unknown identifier — the proof does not parse |
 
-### ⚠️ Counter‑example — fails Gate 2 (Alignment)
+### ◐ Counter‑example — fails Gate 2 (Alignment)
 
 | Theorem | Proof | Failure |
 |---------|-------|---------|
 | `add_comm_vec` | `by rw [Nat.add_comm]` | Uses $\mathbb{N}$ commutativity on $\mathbb{R}^n$ — concept mismatch (score $<0.5$) |
 
-### ⚠️ Counter‑example — warns Gate 3 (Reading)
+### ◐ Counter‑example — warns Gate 3 (Reading)
 
 | Theorem | Proof | Failure |
 |---------|-------|---------|
@@ -140,7 +145,7 @@ The engine distinguishes between valid proofs, misaligned proofs, and outright f
 
 ---
 
-## 📂 Upload Formats
+## ◈ UPLOAD FORMATS
 
 The Streamlit and Gradio apps accept theorems for batch verification in two formats:
 
@@ -156,7 +161,7 @@ Upload a PDF containing LaTeX‑formatted or plain‑text theorems. The engine e
 
 ---
 
-## 🏛 How It Works
+## ◈ HOW IT WORKS
 
 > **[→ Open the interactive workflow diagram](https://twomathematicians-code.github.io/leibniz/workflow.html)** — three animated views: Review, Discovery, Full System.
 
@@ -164,14 +169,14 @@ Upload a PDF containing LaTeX‑formatted or plain‑text theorems. The engine e
 
 ```mermaid
 flowchart TD
-    Input([📋 Theorem T + Proof π<br/>JSONL · PDF · manual]) --> Engine
+    Input([Theorem T + Proof π<br/>JSONL · PDF · manual]) --> Engine
 
-    subgraph Engine[🧮 Leibniz Engine]
-        G1[🔐 Gate 1 — Validity<br/>Lean 4 compile · exit 0<br/>or encyclopedia pattern-match]
-        G2[🧭 Gate 2 — Alignment<br/>concept overlap vs. knowledge base<br/>score 0.00 – 1.00]
-        G3[📖 Gate 3 — Reading<br/>graded human-style scrutiny]
+    subgraph Engine[Leibniz Engine]
+        G1[Gate 1 — Validity<br/>Lean 4 compile · exit 0<br/>or encyclopedia pattern-match]
+        G2[Gate 2 — Alignment<br/>concept overlap vs. knowledge base<br/>score 0.00 – 1.00]
+        G3[Gate 3 — Reading<br/>graded human-style scrutiny]
 
-        G1 -->|● certified · ◐ skip · ○ reject| G2
+        G1 -->|certified · skip · reject| G2
         G2 -->|matched / missing concepts| G3
 
         subgraph G3Tiers[Three difficulty tiers]
@@ -183,11 +188,11 @@ flowchart TD
         G3 --> G3Tiers
     end
 
-    G3Tiers --> Verdict{🏁 Overall}
-    Verdict -->|all gates clear| Pass[✅ PASS<br/>certificate issued]
-    Verdict -->|gate flagged issue| Attn[⚠️ ATTENTION<br/>review required]
+    G3Tiers --> Verdict{Overall}
+    Verdict -->|all gates clear| Pass[PASS<br/>certificate issued]
+    Verdict -->|gate flagged issue| Attn[ATTENTION<br/>review required]
 
-    Pass --> Report[📄 JSON report · certificate]
+    Pass --> Report[JSON report · certificate]
     Attn --> Report
 
     style Input fill:#f3f4f6,stroke:#000,stroke-width:2px
@@ -203,11 +208,11 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Seed([🔍 Seed topic<br/>e.g. 'linear algebra']) --> D[1 · Discover<br/>n conjectures]
+    Seed([Seed topic<br/>e.g. 'linear algebra']) --> D[1 · Discover<br/>n conjectures]
     D --> P[2 · Prove<br/>k candidates each]
     P --> V{3 · Verify<br/>Lean compile}
-    V -->|first proof passes| C[✅ Certified theorem]
-    V -->|none pass| U[❌ Unproven conjecture]
+    V -->|first proof passes| C[Certified theorem]
+    V -->|none pass| U[Unproven conjecture]
 
     style Seed fill:#f3f4f6,stroke:#000,stroke-width:2px
     style C fill:#000,stroke:#000,color:#fff
@@ -222,7 +227,7 @@ flowchart LR
 
 ---
 
-## 🧱 Architecture
+## ◈ ARCHITECTURE
 
 ```
 leibniz/
@@ -245,7 +250,7 @@ leibniz/
 
 ---
 
-## ☁️ Deploy
+## ◈ DEPLOY
 
 | Surface | URL | Host |
 |---------|-----|------|
@@ -256,11 +261,11 @@ leibniz/
 
 ---
 
-## 📚 Inspirations
+## ◈ INSPIRATIONS
 
 - **Tudor Achim** — *The Path to Mathematical Superintelligence* (TED)
 - **G. W. Leibniz** — *De Arte Combinatoria* (1666) and the *characteristica universalis*
-- **D. Loeffler & M. Stoll** — *Formalizing Zeta and L‑Functions in Lean* (2025)
+- **D. Loeffler &amp; M. Stoll** — *Formalizing Zeta and L‑Functions in Lean* (2025)
 - **T. Tao** — On formal proof assistants and the future of mathematical discovery
 
 ---
@@ -269,5 +274,9 @@ leibniz/
   <em>"If we had an exact language … by means of which ideas could be reduced<br>
   to a kind of alphabet of human thoughts, then one could, in disputation,<br>
   simply say: <strong>Let us calculate!</strong>"</em><br>
-  — Gottfried Wilhelm Leibniz, 1677
+  <sub>— Gottfried Wilhelm Leibniz, 1677</sub>
+</p>
+
+<p align="center">
+  <sub>Two Mathematicians &nbsp;·&nbsp; <a href="https://github.com/twomathematicians-code/leibniz">GitHub</a> &nbsp;·&nbsp; <a href="https://leibniz.streamlit.app/">Streamlit</a> &nbsp;·&nbsp; MIT License</sub>
 </p>
