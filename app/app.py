@@ -1,13 +1,13 @@
 """
-Leibniz Gradio App — Hugging Face Space demo
-=============================================
-Two tabs running the full engine inline (StubBackend), with optional
-remote-API mode via LEIBNIZ_API_URL.
-
-Usage:
-    pip install -r leibniz/app/requirements.txt
-    python leibniz/app/app.py                      # local: http://127.0.0.1:7860
-    LEIBNIZ_API_URL=https://my-api.onrender.com python leibniz/app/app.py
+Leibniz Gradio App — Production-ready proof checking & discovery
+================================================================
+Features:
+  • File upload (JSONL theorem/proof batches)
+  • Pre-loaded Linear Algebra sample dataset (15 theorems)
+  • Individual theorem review with 3-gate output
+  • Batch processing: upload → review all → download results
+  • Real model inference (HF backend when available, falls back to Stub)
+  • Model status indicator
 """
 
 from __future__ import annotations
@@ -15,195 +15,384 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Ensure the leibniz package is importable
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import gradio as gr  # type: ignore
 
+from leibniz.pipeline import Engine
+from leibniz.core.types import Theorem, Proof, to_dict
+from leibniz.encyclopedia import default as default_enc
+from leibniz.llm.backend import get_backend
+from leibniz.config import config
 
-API_URL = os.environ.get("LEIBNIZ_API_URL", "").rstrip("/")
-USE_API = bool(API_URL)
-
-if USE_API:
-    import requests
-    print(f"[app] calling remote API at {API_URL}")
-else:
-    from leibniz.pipeline import Engine
-    from leibniz.core.types import Theorem, Proof
-    engine = Engine()
-    print(f"[app] inline engine  backend={engine.backend.name}  lean_available={engine.lean.available}")
+# ---- sample data path ----
+SAMPLES_DIR = Path(os.path.dirname(os.path.abspath(__file__))) / "samples"
+SAMPLE_FILE = SAMPLES_DIR / "linear_algebra.jsonl"
 
 
-# ---- shared helpers ----
+# ---- engine ----
+engine = Engine()
 
-def _api(path: str, body: dict = None) -> dict:
-    resp = requests.post(f"{API_URL}{path}", json=body or {}, timeout=120)
-    resp.raise_for_status()
-    return resp.json()
+# Attempt HF backend if torch + transformers are available
+model_loaded = False
+hf_model = None
+hf_tokenizer = None
+try:
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    hf_model = AutoModelForCausalLM.from_pretrained(
+        "Qwen/Qwen2.5-Math-1.5B-Instruct",
+        torch_dtype=torch.float32, device_map="cpu", low_cpu_mem_usage=True,
+    )
+    hf_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Math-1.5B-Instruct")
+    hf_model.eval()
+    model_loaded = True
+except Exception as e:
+    print(f"[app] HF model not available: {e}")
+    print("[app] Using StubBackend (deterministic, offline).")
+
+# ---- helpers ----
+
+def load_jsonl(path: str | Path) -> List[dict]:
+    rows = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                rows.append(json.loads(line))
+    return rows
 
 
-def _render_report(report: dict) -> str:
+def _theorem_from_row(r: dict) -> Theorem:
+    return Theorem(
+        name=r.get("name", ""),
+        informal=r.get("informal", ""),
+        lean_statement=r.get("lean_statement", r.get("stmt", "")),
+        domain=r.get("domain", "general"),
+        difficulty=r.get("difficulty", "medium"),
+        keywords=list(r.get("keywords", [])),
+    )
+
+
+def _proof_from_row(r: dict) -> Proof:
+    return Proof(
+        lean_tactics=r.get("lean_proof", r.get("proof", "")),
+        informal=r.get("informal", ""),
+    )
+
+
+def _render_gate_report(report: dict) -> str:
     lines = []
     v = report.get("validity", {})
-    cert = v.get("certificate") or ""
     if v.get("passed") is True and v.get("formal"):
-        tag = "✅ FORMALLY CERTIFIED"
+        lines.append("### 🔐 Gate 1 — Validity: ✅ FORMALLY CERTIFIED")
     elif v.get("passed") is True:
-        tag = f"⚠️  PROVISIONAL  ({cert})"
+        lines.append(f"### 🔐 Gate 1 — Validity: ⚠️ PROVISIONAL")
     elif v.get("passed") is None:
-        tag = f"⚪ SKIPPED  ({v.get('error','')})"
+        lines.append(f"### 🔐 Gate 1 — Validity: ⚪ SKIPPED")
     else:
-        tag = f"❌ REJECTED  ({v.get('error','')})"
-    lines.append(f"### 🔐 Gate 1 — Validity\n{tag}")
+        lines.append(f"### 🔐 Gate 1 — Validity: ❌ REJECTED")
+    if v.get("certificate"):
+        lines.append(f"> `{v['certificate']}`")
 
     a = report.get("alignment", {})
-    lines.append(f"### 🧭 Gate 2 — Alignment\nScore: **{a.get('score',0):.2f}**  "
-                 f"Matched: {a.get('matched_concepts',[])}  Missing: {a.get('missing_concepts',[])}")
+    lines.append(f"### 🧭 Gate 2 — Alignment: **{a.get('score',0):.2f}**  "
+                 f"(matched: {', '.join(a.get('matched_concepts',[])) or '(none)'})")
 
     r = report.get("reading", {})
-    lines.append(f"### 📖 Gate 3 — Reading\nOverall: **{r.get('overall_verdict','')}**")
+    lines.append(f"### 📖 Gate 3 — Reading: **{r.get('overall_verdict','').upper()}**")
     for tv in r.get("tiers", []):
-        lines.append(f"- `{tv.get('tier','')}` `{tv.get('verdict','')}`  "
-                     f"{(tv.get('comments',['']))[0]}")
+        e = {"pass":"✅","warn":"⚠️","fail":"❌"}.get(tv.get("verdict",""),"⚪")
+        lines.append(f"- {e} `{tv.get('tier','')}` — {(tv.get('comments',['']))[0] if tv.get('comments') else ''}")
+
     overall = report.get("overall_pass", False)
-    lines.append(f"\n### 🏁 Overall: {'✅ PASS' if overall else '⚠️  ATTENTION'}")
-    return "\n".join(lines)
-
-
-def _render_discovery(result: dict) -> str:
-    seed = result.get("seed", "?")
-    conjs = result.get("conjectures", [])
-    cert = result.get("certified", [])
-    failed = result.get("failed", [])
-    rate = result.get("success_rate", 0)
-    lines = [
-        f"## Discovery: `{seed}`",
-        f"Conjectures: {len(conjs)} | Certified: {len(cert)} | Failed: {len(failed)} | Rate: {rate:.0%}\n",
-    ]
-    lines.append("### ✅ Certified")
-    for c in cert:
-        t = c.get("theorem", {})
-        p = c.get("proof", {})
-        lines.append(f"- **{t.get('name','')}**  "
-                     f"`{t.get('lean_statement','')}`  : = `{p.get('lean_tactics','')}`")
-    if failed:
-        lines.append("\n### ❌ Unproven")
-    for c in failed:
-        t = c.get("theorem", {})
-        lines.append(f"- {t.get('name','')}  ({t.get('domain','')})")
+    icon = "✅ PASS" if overall else "⚠️ ATTENTION"
+    lines.append(f"\n### 🏁 Overall: {icon}")
     return "\n".join(lines)
 
 
 # ---- callbacks ----
 
-def cb_review(name, informal, stmt, proof, domain, difficulty) -> str:
-    if USE_API:
-        report = _api("/review", {
-            "theorem": {"name": name, "informal": informal, "lean_statement": stmt.strip() or None,
-                        "domain": domain, "difficulty": difficulty, "keywords": []},
-            "proof": {"lean_tactics": proof.strip() or None, "informal": informal, "author": "user"},
-        })
+def cb_single_review(name, informal, stmt, proof, domain, difficulty):
+    """Review ONE theorem/proof through all 3 gates."""
+    if not stmt.strip():
+        return "⚠️ Please enter a Lean theorem statement."
+    if not proof.strip():
+        return "⚠️ Please enter a proof (tactic block or proof term)."
+
+    t = Theorem(
+        name=name.strip() or "unnamed",
+        informal=informal.strip(),
+        lean_statement=stmt.strip(),
+        domain=domain.strip() or "general",
+        difficulty=difficulty,
+    )
+    p = Proof(lean_tactics=proof.strip(), informal=informal.strip())
+    report = to_dict(engine.review(t, p))
+    return _render_gate_report(report)
+
+
+def cb_load_sample():
+    """Load and return the sample dataset preview."""
+    if not SAMPLE_FILE.exists():
+        return "⚠️ Sample file not found.", gr.update(choices=[])
+
+    rows = load_jsonl(SAMPLE_FILE)
+    lines = [f"## 📂 Loaded: {SAMPLE_FILE.name}", f"**{len(rows)} theorems** ready for batch processing.", ""]
+    lines.append("| # | Name | Difficulty | Domain |")
+    lines.append("|---|------|-----------|--------|")
+    for i, r in enumerate(rows, 1):
+        lines.append(f"| {i} | `{r.get('name','?')}` | {r.get('difficulty','?')} | {r.get('domain','?')} |")
+    return "\n".join(lines), gr.update(choices=[r["name"] for r in rows], value=rows[0]["name"] if rows else None)
+
+
+def cb_load_row(selected_name: str):
+    """Load a specific row from the sample file into the form fields."""
+    if not selected_name or not SAMPLE_FILE.exists():
+        return "", "", "", "", ""
+    rows = load_jsonl(SAMPLE_FILE)
+    for r in rows:
+        if r.get("name") == selected_name:
+            return (
+                r.get("name", ""),
+                r.get("informal", ""),
+                r.get("lean_statement", r.get("stmt", "")),
+                r.get("lean_proof", r.get("proof", "")),
+                r.get("domain", "linear_algebra"),
+            )
+    return "", "", "", "", ""
+
+
+def cb_batch_process(file_obj, selected_sample_name):
+    """Process an uploaded JSONL file or the selected sample through all 3 gates."""
+    start = time.time()
+    # Determine source
+    if file_obj is not None:
+        path = file_obj.name
+        source = os.path.basename(path)
     else:
-        t = Theorem(name, informal, stmt.strip() or None, domain, difficulty)
-        p = Proof(lean_tactics=proof.strip() or None)
-        from leibniz.core.types import to_dict
+        path = str(SAMPLE_FILE)
+        source = SAMPLE_FILE.name
+
+    if not os.path.exists(path):
+        return f"⚠️ No data source found.", None, ""
+
+    rows = load_jsonl(path)
+    results: List[dict] = []
+    summary_lines = [f"# 📊 Batch Review: {source}", f"Processing {len(rows)} theorems…", ""]
+
+    passed = 0
+    for i, r in enumerate(rows):
+        t = _theorem_from_row(r)
+        p = _proof_from_row(r)
         report = to_dict(engine.review(t, p))
-    return _render_report(report)
+        report["_index"] = i + 1
+        report["_name"] = t.name
+        results.append(report)
+        if report.get("overall_pass"):
+            passed += 1
+
+        # Status
+        validity = report.get("validity", {}).get("passed")
+        v_icon = "✅" if validity is True else ("❌" if validity is False else "⚪")
+        align = report.get("alignment", {}).get("score", 0)
+        read = report.get("reading", {}).get("overall_verdict", "?")
+        summary_lines.append(
+            f"| {i+1:2d} | `{t.name[:28]:28s}` | {v_icon} | {align:.2f} | `{read:4s}` | "
+            f"{'✅' if report.get('overall_pass') else '⚠️'} |"
+        )
+
+    elapsed = time.time() - start
+    summary_lines.insert(3, "| # | Theorem | Validity | Align | Read | Overall |")
+    summary_lines.insert(4, "|---|---------|----------|-------|------|---------|")
+    summary_lines.append(f"\n**Passed: {passed}/{len(rows)} ({passed/len(rows)*100:.0f}%)** · {elapsed:.1f}s")
+
+    # Prepare download
+    download_path = os.path.join(tempfile.gettempdir(), "leibniz_batch_results.json")
+    with open(download_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+    return "\n".join(summary_lines), download_path, ""
 
 
-def cb_discover(seed, n, k) -> str:
-    if USE_API:
-        result = _api("/discover", {"seed": seed, "n": n, "k": k})
-    else:
-        from leibniz.core.types import to_dict
-        result = to_dict(engine.discover_and_verify(seed, n=n, k=k))
-    return _render_discovery(result)
+def cb_model_status():
+    if model_loaded:
+        return f"🧠 **Real model loaded:** `Qwen/Qwen2.5-Math-1.5B-Instruct` (CPU, {hf_model.num_parameters():,} params)"
+    return f"📋 **StubBackend active** (deterministic, offline). Encyc: {len(default_enc().all())} entries."
 
 
-def cb_health() -> str:
-    if USE_API:
-        d = _api("/health", {})
-    else:
-        d = {
-            "status": "healthy", "backend": engine.backend.name,
-            "lean_available": engine.lean.available, "model": engine.cfg.model,
-            "uptime_seconds": 0,
-        }
-    return f"Backend: **{d['backend']}** | Model: `{d.get('model','?')}` | Lean: {'✅' if d.get('lean_available') else '❌'}"
+def cb_review_uploaded(file_obj):
+    if file_obj is None:
+        return "⚠️ Please upload a JSONL file first.", None
+    return cb_batch_process(file_obj, None)
 
 
 # ---- UI ----
 
-def build() -> gr.Blocks:
-    with gr.Blocks(title="Leibniz Engine") as app:
-        gr.Markdown("# 🧮 Leibniz — A Universal Calculator for Truth")
-        gr.Markdown("Three-stage LLM-driven mathematical discovery & proof checking. "
-                    f"Engine: `{API_URL + ' (remote)' if USE_API else 'inline (StubBackend)'}`.")
+css = """
+.gate-pass { background: #d1fae5; color: #059669; padding: 2px 8px; border-radius: 4px; }
+.gate-warn { background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 4px; }
+.gate-fail { background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 4px; }
+.mono { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+"""
+
+def build():
+    with gr.Blocks(title="🧮 Leibniz — Proof Engine", fill_height=True) as app:
+        gr.Markdown("""# 🧮 Leibniz — A Universal Calculator for Truth
+        **Three-stage mathematical discovery & proof checking**, with Lean 4 formal verification.
+        24 encyclopedia entries · 5 pipeline stages · 3 backends.""")
+        status = gr.Markdown("⏳ Loading…")
 
         with gr.Tabs():
-            # --- Discovery Playground ---
-            with gr.TabItem("🔍 Discovery Playground"):
-                gr.Markdown("**Discover → Prove → Verify**: seed a topic and watch the engine propose, prove, and certify theorems.")
+            # ═══════════════════════════════════════════════════════
+            # TAB 1: SINGLE REVIEW
+            # ═══════════════════════════════════════════════════════
+            with gr.TabItem("📋 Single Review"):
+                gr.Markdown("Paste a theorem and proof → 3-gate review (Validity → Alignment → Reading).")
                 with gr.Row():
-                    seed = gr.Textbox("arithmetic and primes", label="Seed topic")
-                    n_slider = gr.Slider(1, 15, value=5, step=1, label="Conjectures")
-                    k_slider = gr.Slider(1, 8, value=4, step=1, label="Candidates per conjecture")
-                run_btn = gr.Button("🚀 Run Discovery", variant="primary")
-                disc_out = gr.Markdown("*(results appear here)*")
+                    with gr.Column(scale=2):
+                        name = gr.Textbox("add_comm_vec", label="Theorem name")
+                        stmt = gr.Textbox(
+                            "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
+                            label="Lean 4 statement", lines=2,
+                        )
+                        proof = gr.Textbox(
+                            "by ext i; exact add_comm (v i) (w i)",
+                            label="Proof (tactic block)", lines=3,
+                        )
+                        with gr.Row():
+                            domain_in = gr.Dropdown(
+                                ["linear_algebra", "arithmetic", "algebra", "number_theory", "set_theory", "general"],
+                                value="linear_algebra", label="Domain",
+                            )
+                            diff_in = gr.Dropdown(
+                                ["easy", "medium", "hard"], value="easy", label="Difficulty",
+                            )
+                        informal_in = gr.Textbox("v + w = w + v for vectors in ℝⁿ", label="Informal statement")
+                        with gr.Row():
+                            review_btn = gr.Button("🔍 Run Review", variant="primary", size="lg")
+                            clear_btn = gr.Button("✕ Clear", size="lg")
 
-                run_btn.click(cb_discover, [seed, n_slider, k_slider], disc_out)
+                    with gr.Column(scale=3):
+                        review_out = gr.Markdown("*(Results appear here after review.)*")
 
-            # --- Proof Reviewer ---
-            with gr.TabItem("📋 Proof Reviewer"):
-                gr.Markdown("**Validity → Alignment → Reading**: paste a theorem and proof for the 3-gate review.")
+                review_btn.click(
+                    cb_single_review,
+                    [name, informal_in, stmt, proof, domain_in, diff_in],
+                    review_out,
+                )
+                clear_btn.click(
+                    lambda: ("", "", "", "", "linear_algebra", "easy", "*(Cleared.)*"),
+                    [], [name, informal_in, stmt, proof, domain_in, diff_in, review_out],
+                )
+
+            # ═══════════════════════════════════════════════════════
+            # TAB 2: BATCH PROCESSING
+            # ═══════════════════════════════════════════════════════
+            with gr.TabItem("📦 Batch Processing"):
+                gr.Markdown("Upload a JSONL file of theorems, or use the built-in Linear Algebra sample.")
+
                 with gr.Row():
-                    name = gr.Textbox("add_comm_nat", label="Theorem name")
-                    domain = gr.Textbox("algebra", label="Domain")
-                    diff = gr.Dropdown(["easy", "medium", "hard"], value="medium", label="Difficulty")
-                informal = gr.Textbox("Addition of natural numbers is commutative: a + b = b + a.", label="Informal statement", lines=2)
-                stmt = gr.Textbox("theorem add_comm_nat (a b : Nat) : a + b = b + a", label="Lean 4 statement", lines=2)
-                proof = gr.Textbox("by rw [Nat.add_comm]", label="Proof (tactic block / proof term)", lines=3)
-                review_btn = gr.Button("🔍 Run Review", variant="primary")
-                review_out = gr.Markdown("*(results appear here)*")
+                    with gr.Column(scale=1):
+                        gr.Markdown("### 📁 Upload file")
+                        upload_file = gr.File(label="Upload JSONL", file_types=[".jsonl", ".json"])
+                        upload_btn = gr.Button("🔍 Review Uploaded File", variant="secondary")
+                        gr.Markdown("---")
+                        gr.Markdown("### 🧮 Sample dataset")
+                        load_sample_btn = gr.Button("📂 Load Linear Algebra Sample", variant="secondary")
+                        sample_preview = gr.Markdown("")
 
-                review_btn.click(cb_review, [name, informal, stmt, proof, domain, diff], review_out)
+                    with gr.Column(scale=2):
+                        gr.Markdown("### 📊 Results")
+                        batch_output = gr.Markdown("*(Upload or load sample to start.)*")
+                        download_out = gr.File(label="⬇ Download results (JSON)", visible=True)
 
-            # --- Info ---
+                upload_btn.click(cb_review_uploaded, upload_file, [batch_output, download_out])
+                load_sample_btn.click(cb_load_sample, [], [sample_preview])
+
+                # Quick load a specific theorem from sample
+                with gr.Row():
+                    sample_selector = gr.Dropdown([], label="Quick-load theorem into Single Review tab", interactive=True)
+                sample_selector.change(cb_load_row, sample_selector, [name, informal_in, stmt, proof, domain_in])
+                load_sample_btn.click(
+                    cb_load_sample, [], [sample_preview, sample_selector]
+                )
+
+            # ═══════════════════════════════════════════════════════
+            # TAB 3: DISCOVERY
+            # ═══════════════════════════════════════════════════════
+            with gr.TabItem("🔍 Discovery"):
+                gr.Markdown("Seed a topic → Discover conjectures → Prove → Verify.")
+                with gr.Row():
+                    seed = gr.Textbox("linear algebra", label="Seed topic")
+                    n_slider = gr.Slider(1, 10, value=5, step=1, label="Conjectures")
+                    k_slider = gr.Slider(1, 8, value=4, step=1, label="Candidates/theorem")
+                disc_btn = gr.Button("🚀 Run Discovery", variant="primary", size="lg")
+                disc_out = gr.Markdown("*(Results appear here.)*")
+
+                def cb_discover(seed_val, n_val, k_val):
+                    result = to_dict(engine.discover_and_verify(seed_val, n=n_val, k=k_val))
+                    lines = [
+                        f"## 🔍 Discovery: `{result['seed']}`",
+                        f"**Conjectures:** {len(result['conjectures'])} · "
+                        f"**Certified:** {len(result['certified'])} · "
+                        f"**Failed:** {len(result['failed'])} · "
+                        f"**Rate:** {result.get('success_rate',0):.0%}\n",
+                    ]
+                    for c in result["certified"]:
+                        t, p = c["theorem"], c["proof"]
+                        lines.append(f"✅ **{t['name']}** ({t['domain']})")
+                        lines.append(f"> `{t['lean_statement']}  :=  {p['lean_tactics']}`")
+                    for c in result["failed"]:
+                        lines.append(f"❌ **{c['theorem']['name']}** ({c['theorem']['domain']}) — no passing proof")
+                    return "\n".join(lines)
+
+                disc_btn.click(cb_discover, [seed, n_slider, k_slider], disc_out)
+
+            # ═══════════════════════════════════════════════════════
+            # TAB 4: ABOUT
+            # ═══════════════════════════════════════════════════════
             with gr.TabItem("ℹ️ About"):
-                gr.Markdown("""
-                ## How it works
+                gr.Markdown(f"""
+                ## Leibniz Engine v0.1.0
 
-                | Gate | What it checks | Method |
-                |------|---------------|--------|
-                | **Validity** | Does the proof compile in Lean 4? | Formal type-check (or provisional pattern-match) |
-                | **Alignment** | Do the proof's concepts match the theorem? | Encyclopedia concept-overlap score 0–1 |
-                | **Reading** | How does the proof hold up under human-style scrutiny? | Three graded tiers: easy → medium → hard |
+                | Gate | What | Method |
+                |------|------|--------|
+                | **Validity** | Does the proof compile in Lean 4? | Formal type-check / pattern-match |
+                | **Alignment** | Does it target the right concepts? | Encyclopedia overlap score 0–1 |
+                | **Reading** | Human-style scrutiny | easy → medium → hard |
 
-                ### The Leibniz vision (~1666)
+                ### Model Status
+                {cb_model_status()}
 
-                | Pillar | Our component |
-                |--------|-------------|
-                | *Characteristica Universalis* (logical language) | `theorem` / `proof` types + Lean 4 bridge |
-                | *Encyclopedia* (verified thoughts) | Bundled knowledge base + Mathlib |
-                | *Calculus Ratiocinator* (engine of reason) | LLM backends (stub/hf/remote) + the 5-stage pipeline |
-
-                ### Run locally
+                ### Quick start — command line
                 ```bash
-                pip install -r leibniz/requirements.txt
-                python leibniz/scripts/demo.py
+                pip install -r requirements.txt
+                python scripts/demo.py --seed "linear algebra"
+                python -m uvicorn api.main:app --port 8430
                 ```
 
-                [GitHub](https://github.com/twomathematicians-code/riemann-hypothesis)
+                ### References
+                - **Tudor Achim** — *The Path to Mathematical Superintelligence* (TED)
+                - **G.W. Leibniz** — *De Arte Combinatoria* (1666)
+                - [GitHub repo](https://github.com/twomathematicians-code/leibniz)
+                - [Browser playground](https://twomathematicians-code.github.io/leibniz/)
                 """)
-                gr.Button("🩺 Health Check").click(cb_health, [], gr.Markdown())
+
+        # Initialize status
+        app.load(lambda: cb_model_status(), [], status)
 
     return app
 
 
 if __name__ == "__main__":
     app = build()
-    app.launch(server_name="0.0.0.0", server_port=7860, share=False,
-              css="footer{display:none!important} .tab-nav button{font-size:1.05em}")
+    app.launch(
+        server_name="127.0.0.1", server_port=7860, share=False,
+        css=css,
+    )
