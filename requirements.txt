@@ -7,9 +7,17 @@ pyyaml>=6
 fastapi>=0.110
 uvicorn[standard]>=0.27
 
-# --- HF Space demo (app/) ---
+# --- Streamlit Cloud deployment ---
+streamlit>=1.40
+pdfplumber>=0.11
+pandas>=1.5
+
+# --- Gradio app (app/) ---
 gradio>=4
 
-# Heavy ML deps (training / real model inference) are NOT included here.
-# Install them separately when ready:
-#   pip install -r leibniz/training/requirements.txt
+# --- Training / HF model inference (install separately) ---
+# torch>=2.1
+# transformers>=4.40
+# peft>=0.10
+# datasets>=2.18
+# accelerate>=0.25
