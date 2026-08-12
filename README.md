@@ -158,33 +158,60 @@ Upload a PDF containing LaTeX‑formatted or plain‑text theorems. The engine e
 
 ## 🏛 How It Works
 
-**[→ Interactive workflow diagram](https://twomathematicians-code.github.io/leibniz/workflow.html)** — three views: Review, Discovery, Full System.
+> **[→ Open the interactive workflow diagram](https://twomathematicians-code.github.io/leibniz/workflow.html)** — three animated views: Review, Discovery, Full System.
 
+### Review Mode — 3-Gate Proof Verification
+
+```mermaid
+flowchart TD
+    Input([📋 Theorem T + Proof π<br/>JSONL · PDF · manual]) --> Engine
+
+    subgraph Engine[🧮 Leibniz Engine]
+        G1[🔐 Gate 1 — Validity<br/>Lean 4 compile · exit 0<br/>or encyclopedia pattern-match]
+        G2[🧭 Gate 2 — Alignment<br/>concept overlap vs. knowledge base<br/>score 0.00 – 1.00]
+        G3[📖 Gate 3 — Reading<br/>graded human-style scrutiny]
+
+        G1 -->|● certified · ◐ skip · ○ reject| G2
+        G2 -->|matched / missing concepts| G3
+
+        subgraph G3Tiers[Three difficulty tiers]
+            T1[Easy<br/>surface · syntax]
+            T2[Medium<br/>logic flow]
+            T3[Hard<br/>deep correctness]
+            T1 --> T2 --> T3
+        end
+        G3 --> G3Tiers
+    end
+
+    G3Tiers --> Verdict{🏁 Overall}
+    Verdict -->|all gates clear| Pass[✅ PASS<br/>certificate issued]
+    Verdict -->|gate flagged issue| Attn[⚠️ ATTENTION<br/>review required]
+
+    Pass --> Report[📄 JSON report · certificate]
+    Attn --> Report
+
+    style Input fill:#f3f4f6,stroke:#000,stroke-width:2px
+    style Engine fill:#ffffff,stroke:#000,stroke-width:2px
+    style G1 fill:#ffffff,stroke:#000,stroke-width:1px
+    style G2 fill:#ffffff,stroke:#000,stroke-width:1px
+    style G3 fill:#ffffff,stroke:#000,stroke-width:1px
+    style Pass fill:#000,stroke:#000,color:#fff
+    style Attn fill:#fff,stroke:#000,stroke-dasharray: 5 5
 ```
-  Theorem T + Proof π
-        │
-        ▼
-  ┌─────────────────────────────────────────────────────┐
-  │                 Leibniz Engine                       │
-  │                                                      │
-  │   ┌──────────────┐    ┌──────────────┐    ┌────────┐│
-  │   │ GATE 1       │    │ GATE 2       │    │ GATE 3 ││
-  │   │ VALIDITY     │───▶│ ALIGNMENT    │───▶│ READING││
-  │   │              │    │              │    │        ││
-  │   │ Lean compile │    │ Concept      │    │ easy   ││
-  │   │ or pattern-  │    │ overlap      │    │ medium ││
-  │   │ match        │    │ score 0→1    │    │ hard   ││
-  │   │              │    │              │    │        ││
-  │   │ ● / ◐ / ○   │    │ matched /    │    │ pass / ││
-  │   │              │    │ missing      │    │ warn / ││
-  │   └──────────────┘    └──────────────┘    │ fail   ││
-  │                                           └────────┘│
-  │                                                      │
-  │   All three must clear → 🏁 OVERALL: PASS / ATTENTION │
-  └─────────────────────────────────────────────────────┘
-        │
-        ▼
-  Certificate + downloadable JSON report
+
+### Discovery Mode — Discover → Prove → Certify
+
+```mermaid
+flowchart LR
+    Seed([🔍 Seed topic<br/>e.g. 'linear algebra']) --> D[1 · Discover<br/>n conjectures]
+    D --> P[2 · Prove<br/>k candidates each]
+    P --> V{3 · Verify<br/>Lean compile}
+    V -->|first proof passes| C[✅ Certified theorem]
+    V -->|none pass| U[❌ Unproven conjecture]
+
+    style Seed fill:#f3f4f6,stroke:#000,stroke-width:2px
+    style C fill:#000,stroke:#000,color:#fff
+    style U fill:#fff,stroke:#000,stroke-dasharray: 5 5
 ```
 
 | Path | Description |
