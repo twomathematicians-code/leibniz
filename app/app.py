@@ -138,8 +138,7 @@ def cb_health() -> str:
 # ---- UI ----
 
 def build() -> gr.Blocks:
-    css = "footer{display:none!important} .tab-nav button{font-size:1.05em}"
-    with gr.Blocks(title="Leibniz Engine", css=css, theme=gr.themes.Soft()) as app:
+    with gr.Blocks(title="Leibniz Engine") as app:
         gr.Markdown("# 🧮 Leibniz — A Universal Calculator for Truth")
         gr.Markdown("Three-stage LLM-driven mathematical discovery & proof checking. "
                     f"Engine: `{API_URL + ' (remote)' if USE_API else 'inline (StubBackend)'}`.")
@@ -206,4 +205,5 @@ def build() -> gr.Blocks:
 
 if __name__ == "__main__":
     app = build()
-    app.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    app.launch(server_name="0.0.0.0", server_port=7860, share=False,
+              css="footer{display:none!important} .tab-nav button{font-size:1.05em}")
