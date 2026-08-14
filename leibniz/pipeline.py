@@ -138,6 +138,17 @@ class Engine:
         from .compute.engine import compute as _compute
         return _compute(query, intent=intent)
 
+    # ---------- NONCOMMUTATIVE ANALYSIS (SU(2) cell) ----------
+
+    def su2_analysis(self, l_max: int = 2) -> dict:
+        """Exact symbolic harmonic analysis on SU(2) up to rank l_max.
+
+        Computes Wigner d-matrices, Weyl characters, fusion rules, and runs
+        the machine verification of Peter–Weyl orthogonality (exact, via the
+        Beta-function reduction — no floating point)."""
+        from .groups.su2 import su2_report
+        return su2_report(l_max)
+
 
 # --- module-level default engine ---
 
@@ -175,3 +186,7 @@ def formalize_and_review(informal: str) -> GateReport:
 
 def compute(query: str, intent: Optional[str] = None):
     return get_engine().compute(query, intent=intent)
+
+
+def su2_analysis(l_max: int = 2) -> dict:
+    return get_engine().su2_analysis(l_max)

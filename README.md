@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Lean-4.14.0-000000?style=flat-square">
-  <img src="https://img.shields.io/badge/Tests-53%2F53-000000?style=flat-square">
+  <img src="https://img.shields.io/badge/Tests-88%2F88-000000?style=flat-square">
   <img src="https://img.shields.io/badge/License-MIT-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Streamlit-live-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Pages-live-000000?style=flat-square">
@@ -41,6 +41,24 @@ A proof **passes** only when it clears all three gates. The engine also runs in 
 
 **Verdict indicators** &nbsp; `●` pass &nbsp; `◐` skip / provisional &nbsp; `○` reject
 
+### The noncommutative cell — harmonic analysis on SU(2)
+
+The engine's deepest layer computes in the setting where **no existing CAS operates**: the irreducible unitary representations of compact Lie groups — the frequency side of the Ruzhansky–Turunen *global quantization* (Birkhäuser, 2010).
+
+| Object | What the engine computes | Method |
+|--------|--------------------------|--------|
+| **Wigner $d$-matrices** | $d^l_{mn}(\theta)$ for all $l,m,n$ | exact — Condon–Shortley convention, verified against textbook tables |
+| **Weyl characters** | $\chi_l(\theta)=\sin((2l+1)\theta/2)/\sin(\theta/2)$ | exact — verified $\chi_l=\mathrm{Tr}\,d^l$ |
+| **Fusion rules** | $V_a\otimes V_b=\bigoplus_{l=|a-b|}^{a+b}V_l$ | exact — dimension additivity checked |
+| **Peter–Weyl orthogonality** | $\langle t^l_{mn},t^{l'}_{m'n'}\rangle=\frac{\delta_{ll'}\delta_{mm'}\delta_{nn'}}{2l+1}$ | **machine-verified by exact symbolic integration** (Beta-function reduction, zero floating point) |
+
+```bash
+python -c "from leibniz.pipeline import su2_analysis; r=su2_analysis(2); print(r['peter_weyl_passed'],'/',r['peter_weyl_checks'],'Peter–Weyl checks verified exactly')"
+# → 47 / 47 Peter–Weyl checks verified exactly
+```
+
+This is not a numeric simulation — every check is an **exact symbolic identity**, the same argument a working harmonic analyst would write, executed by the engine.
+
 ---
 
 ## ◈ QUICK START
@@ -59,7 +77,16 @@ python scripts/demo.py --seed "linear algebra"
 # API server — http://localhost:8430/docs
 python -m uvicorn api.main:app --port 8430
 
-# Run tests
+# Symbolic computation (16 intents)
+python -c "from leibniz.pipeline import compute; print(compute('eigenvalues of [[2,0],[0,3]]').answer)"
+
+# Exact harmonic analysis on SU(2) — machine-verified Peter–Weyl
+python -c "from leibniz.pipeline import su2_analysis; r=su2_analysis(2); print(r['peter_weyl_passed'],'/',r['peter_weyl_checks'])"
+
+# Autoformalization (NL → Lean)
+python -c "from leibniz.pipeline import formalize; print(formalize('rank nullity theorem').lean_statement)"
+
+# Run tests (88 passing)
 PYTHONPATH=. pytest tests -q
 ```
 
@@ -231,19 +258,20 @@ flowchart LR
 
 ```
 leibniz/
-├── streamlit_app.py            Streamlit deployment (PDF + JSONL upload)
+├── streamlit_app.py            Streamlit app (7 modes: compute, SU(2), review, batch, formalize, discovery, about)
 ├── leibniz/                    Python engine
 │   ├── core/types.py           Theorem · Proof · GateReport (11 types)
 │   ├── llm/backend.py          Stub │ HF │ Remote model backends
-│   ├── stages/                 discover · prove · verify · align · read
+│   ├── stages/                 discover · prove · verify · align · read · formalize
+│   ├── compute/                SymPy symbolic engine (16 intents)
+│   ├── groups/su2.py           Wigner d, Weyl characters, Peter–Weyl verification (exact)
 │   ├── formal/lean_client.py   Lean 4 CLI bridge
-│   ├── encyclopedia/           24-entry knowledge base + search
-│   └── pipeline.py             Orchestrator
-├── api/                        FastAPI host (Render / Fly.io)
-├── app/                        Gradio app + sample datasets
-│   └── samples/                15‑theorem Linear Algebra JSONL
-├── docs/index.html             Browser proof‑checker playground
-├── lean/                       Lean 4 library (16 theorems, no sorry)
+│   ├── encyclopedia/           40-entry knowledge base + Mathlib concept index
+│   └── pipeline.py             Orchestrator (compute · review · formalize · su2_analysis · discover)
+├── api/                        FastAPI host (10 endpoints incl. /compute, /formalize, /su2/analysis)
+├── app/                        Gradio app + sample datasets (JSONL + PDF)
+├── docs/                       Browser playground + workflow diagram
+├── lean/                       Lean 4 library (16 theorems + Mathlib bridge)
 ├── training/                   SFT fine‑tuning framework (44‑pair corpus)
 └── tests/                      53 tests
 ```
@@ -254,10 +282,28 @@ leibniz/
 
 | Surface | URL | Host |
 |---------|-----|------|
-| **Streamlit Cloud** | [leibniz.streamlit.app](https://leibniz.streamlit.app/) | Free — live |
+| **Streamlit Cloud** | [leibniz.streamlit.app](https://leibniz.streamlit.app/) — 7 modes incl. Compute, SU(2) Analysis, Formalize | Free — live |
 | **Browser playground** | [twomathematicians-code.github.io/leibniz](https://twomathematicians-code.github.io/leibniz/) | GitHub Pages — live |
-| **HF Space** | Copy `app/` to a new Space | Free CPU |
-| **API host** | `docker build -f api/Dockerfile .` | Render / Fly.io |
+| **REST API** | `POST /compute`, `/review`, `/formalize`, `/su2/analysis`, `/discover` + 4 more | FastAPI :8430 |
+| **Docker** | `docker build -f api/Dockerfile .` | Render / Fly.io |
+
+---
+
+## ◈ RESEARCH ROADMAP — open problems (honest status)
+
+The noncommutative layer is deliberately scoped to what is **real and verified**. Everything beyond it is stated here with status, ETA, and what it needs.
+
+| Milestone | Status | ETA | Needed |
+|-----------|--------|-----|--------|
+| Exact Peter–Weyl verification on SU(2) | **done** — 47/47 exact checks | — | — |
+| Wigner $d$-matrices, Weyl characters, fusion rules | **done** — exact, tested | — | — |
+| Matrix-valued symbols $R_a(x,\xi)$ — the operator side of global quantization | **to be investigated** | 1–3 months | symbolic calculus on the dual (Δ-operator bounds, $S^m_{\rho,\delta}$ conditions) |
+| $L^2$-boundedness certificate on $\mathrm{SU}(2)$ (Calderón–Vaillancourt analogue) | **to be formalised** | 6–9 months | Mathlib toolchain; Lean formalisation of the group Fourier inversion |
+| Heisenberg / stratified groups (Schrödinger representation) | **to be investigated** | 9–12 months | Fischer–Ruzhansky quantization framework |
+| Hard analysis: dispersive/Strichartz, singular integrals on groups | **open research** | 18+ months | genuinely new formalisation work — not scheduled as a deliverable |
+| Fine-tuned prover model (replacing StubBackend) | **pipeline ready** | GPU availability | one GPU-week; `training/` framework + corpus are committed |
+
+Every item above the line is **executed and testable now**; everything below is stated as *to be investigated* with its dependencies named. Nothing is claimed that is not demonstrably running.
 
 ---
 

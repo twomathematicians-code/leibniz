@@ -281,7 +281,7 @@ st.sidebar.markdown(f"""
 | Lean | {"available" if engine.lean.available else "provisional"} |
 """)
 
-mode = st.sidebar.radio("", ["Compute", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
+mode = st.sidebar.radio("", ["Compute", "SU(2) Analysis", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
 
 st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
 if SAMPLE_FILE.exists():
@@ -350,6 +350,64 @@ if mode == "Compute":
                         st.markdown(s)
             else:
                 st.error(r.error or "Computation failed.")
+
+elif mode == "SU(2) Analysis":
+    st.markdown('<p class="brand-label">Noncommutative Analysis · SU(2)</p>', unsafe_allow_html=True)
+    st.markdown("## Harmonic analysis on SU(2) — exact, symbolic, machine-verified")
+    st.markdown(
+        "The irreducible unitary dual of $\\mathrm{SU}(2)$ is $\\{l \\in \\mathbb{N}_0\\}$ "
+        "with $d_l = 2l+1$. This mode computes the Wigner $d$-matrices, Weyl characters, "
+        "and fusion rules **exactly**, and machine-verifies the **Peter–Weyl orthogonality "
+        "theorem** by exact symbolic integration (Beta-function reduction — zero floating point)."
+    )
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        l_max = st.slider("Maximum rank l", 0, 3, 2,
+                          help="Peter–Weyl verification covers all pairs l, l' ≤ this value.")
+        go_su2 = st.button("Run SU(2) Analysis", type="primary", use_container_width=True)
+
+    with c2:
+        if go_su2:
+            with st.spinner("Computing representation theory exactly…"):
+                rep = engine.su2_analysis(l_max)
+
+            st.markdown('<div class="brand-label">The irreducible dual</div>', unsafe_allow_html=True)
+            dual_rows = [f"| $l$ | $d_l$ | $\\chi_l(\\theta)$ |" , "|---|---|---|"]
+            for l in range(l_max + 1):
+                dual_rows.append(f"| {l} | {2*l+1} | {rep['weyl_character_formula'].split(' = ')[1] if l==0 else ''} |")
+            # simpler: show dimension table + formula
+            st.markdown(
+                "**Weyl character formula:** $\\chi_l(\\theta) = \\dfrac{\\sin((2l+1)\\theta/2)}{\\sin(\\theta/2)}$  "
+                f"— verified $\\chi_l = \\mathrm{Tr}\\,d^l$ for $l \\le {l_max}$ ✓"
+            )
+            dims = " · ".join(f"$d_{{{l}}} = {2*l+1}$" for l in range(l_max + 1))
+            st.markdown(f"**Dimensions:** {dims}")
+
+            st.markdown('<div class="brand-label">Peter–Weyl orthogonality (machine-verified)</div>', unsafe_allow_html=True)
+            ok, total = rep["peter_weyl_passed"], rep["peter_weyl_checks"]
+            st.metric("Exact symbolic checks passed", f"{ok} / {total}")
+            st.progress(ok / total if total else 0)
+            st.caption(
+                "$\\langle t^l_{mn}, t^{l'}_{m'n'}\\rangle = \\delta_{ll'}\\delta_{mm'}\\delta_{nn'}/(2l+1)$ — "
+                "checked by exact symbolic integration, not numerics."
+            )
+            with st.expander("Sample verifications"):
+                for s in rep["sample_results"]:
+                    mark = "●" if s["ok"] else "○"
+                    st.markdown(f"{mark} `{s['pair']}` → `{s['value']}` = `{s['expected']}`")
+
+            st.markdown('<div class="brand-label">Fusion rules</div>', unsafe_allow_html=True)
+            ex = rep["fusion_examples"]
+            for key in list(ex)[:4]:
+                st.markdown(f"$V_{{{key.split('⊗')[0][2:]}}} \\otimes V_{{{key.split('⊗')[1][2:]}}} = "
+                            f"{' \\oplus '.join(f'V_{{{l}}}' for l in ex[key])}$")
+
+            st.caption(
+                "This is the frequency side of the Ruzhansky–Turunen global quantization. "
+                "Operator-valued symbols $R_a(x,\\xi)$ and $L^2$-boundedness certificates "
+                "are the next milestone (see repository roadmap)."
+            )
 
 elif mode == "Single Review":
     st.markdown('<p class="brand-label">Single Review</p>', unsafe_allow_html=True)

@@ -169,6 +169,17 @@ async def formalize_endpoint(payload: dict):
     }
 
 
+@app.post("/su2/analysis", tags=["Groups"], summary="Exact harmonic analysis on SU(2)")
+async def su2_endpoint(payload: dict):
+    """Exact symbolic harmonic analysis on SU(2): Wigner d-matrices, Weyl
+    characters, fusion rules, and machine-verified Peter–Weyl orthogonality
+    (exact Beta-function integration — no floating point)."""
+    l_max = int((payload or {}).get("l_max", 2))
+    if not (0 <= l_max <= 4):
+        raise HTTPException(status_code=400, detail="l_max must be between 0 and 4.")
+    return engine.su2_analysis(l_max)
+
+
 @app.get("/", response_class=HTMLResponse, tags=["System"])
 async def landing():
     return LANDING_HTML

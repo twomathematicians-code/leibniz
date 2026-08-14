@@ -57,6 +57,18 @@ jobs:
     - name: Demo smoke test
       run: PYTHONPATH=. python scripts/demo.py --seed "arithmetic" 2>&1 | head -20
 
+    - name: Compute engine smoke test
+      run: |
+        PYTHONPATH=. python -c "from leibniz.pipeline import compute; r=compute('eigenvalues of [[2,0],[0,3]]'); assert r.ok and '2' in r.answer; print('compute OK:', r.answer)"
+
+    - name: SU(2) Peter-Weyl smoke test
+      run: |
+        PYTHONPATH=. python -c "from leibniz.pipeline import su2_analysis; r=su2_analysis(2); assert r['peter_weyl_all_verified']; print('SU(2) OK:', r['peter_weyl_passed'], '/', r['peter_weyl_checks'])"
+
+    - name: Formalize smoke test
+      run: |
+        PYTHONPATH=. python -c "from leibniz.pipeline import formalize; r=formalize('rank nullity theorem'); assert r.matched_entry=='rank_nullity'; print('formalize OK:', r.matched_entry)"
+
     - name: Training harness smoke test
       run: PYTHONPATH=. python training/eval.py --stub --limit 10 --k 4 2>&1 | tail -5
 
