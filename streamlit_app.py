@@ -379,7 +379,7 @@ elif mode == "SU(2) Analysis":
             # simpler: show dimension table + formula
             st.markdown(
                 "**Weyl character formula:** $\\chi_l(\\theta) = \\dfrac{\\sin((2l+1)\\theta/2)}{\\sin(\\theta/2)}$  "
-                f"— verified $\\chi_l = \\mathrm{Tr}\\,d^l$ for $l \\le {l_max}$ ✓"
+                f"— verified $\\chi_l = \\mathrm{{Tr}}\\,d^l$ for $l \\le {l_max}$ ✓"
             )
             dims = " · ".join(f"$d_{{{l}}} = {2*l+1}$" for l in range(l_max + 1))
             st.markdown(f"**Dimensions:** {dims}")
