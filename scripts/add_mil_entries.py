@@ -1,0 +1,148 @@
+"""Add Mathematics in Lean (MiL)-sourced entries to the encyclopedia.
+
+MiL: Avigad & Massot, Mathematics in Lean (CC BY 4.0).
+Each entry is a Mathlib-typed theorem statement aligned with a MiL chapter.
+"""
+
+import json
+import os
+
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                    "..", "leibniz", "encyclopedia", "data.json")
+
+NEW_ENTRIES = [
+    dict(name="sq_nonneg", informal="The square of any real number is nonnegative (x^2 >= 0).",
+         lean_statement="theorem sq_nonneg (x : Real) : 0 <= x ^ 2", lean_proof="",
+         domain="analysis", difficulty="easy",
+         keywords=["square", "nonnegative", "real numbers", "order", "calculus"],
+         rationale="MiL Ch.2 'Basics' - the first analytic inequality.",
+         requires_mathlib=True, mathlib_ref="sq_nonneg",
+         source="Mathematics in Lean, Ch.2 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="abs_nonneg", informal="The absolute value of a real number is nonnegative.",
+         lean_statement="theorem abs_nonneg (x : Real) : 0 <= |x|", lean_proof="",
+         domain="analysis", difficulty="easy",
+         keywords=["absolute value", "nonnegative", "order", "real numbers"],
+         rationale="MiL Ch.2 - basic absolute-value facts underpinning limits.",
+         requires_mathlib=True, mathlib_ref="abs_nonneg",
+         source="Mathematics in Lean, Ch.2 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="irrational_sqrt_two", informal="The square root of 2 is irrational.",
+         lean_statement="theorem irrational_sqrt_two : Irrational (Real.sqrt 2)", lean_proof="",
+         domain="number_theory", difficulty="medium",
+         keywords=["irrational", "sqrt", "number theory", "contradiction"],
+         rationale="MiL Ch.5 'Elementary Number Theory' - the classic irrationality proof.",
+         requires_mathlib=True, mathlib_ref="irrational_sqrt_two",
+         source="Mathematics in Lean, Ch.5 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="exists_infinite_primes", informal="There are infinitely many primes (Euclid).",
+         lean_statement="theorem exists_infinite_primes : forall n, exists p > n, Nat.Prime p", lean_proof="",
+         domain="number_theory", difficulty="hard",
+         keywords=["primes", "infinitude", "euclid", "number theory"],
+         rationale="MiL Ch.5 - Euclid's theorem with Mathlib's Nat.Prime.",
+         requires_mathlib=True, mathlib_ref="Nat.exists_infinite_primes",
+         source="Mathematics in Lean, Ch.5 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="schroder_bernstein", informal="Schroder-Bernstein: injections X->Y and Y->X give a bijection X->Y.",
+         lean_statement="theorem schroder_bernstein {X Y : Type*} (f : X -> Y) (g : Y -> X) (hf : Function.Injective f) (hg : Function.Injective g) : exists h : X -> Y, Function.Bijective h", lean_proof="",
+         domain="set_theory", difficulty="hard",
+         keywords=["schroder-bernstein", "bijection", "injection", "cardinality", "set theory"],
+         rationale="MiL Ch.4 'Sets and Functions' - culminating proof exercise.",
+         requires_mathlib=True, mathlib_ref="Function.Embedding.schroeder_bernstein",
+         source="Mathematics in Lean, Ch.4 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="finset_card_powerset", informal="A finite set with n elements has 2^n subsets.",
+         lean_statement="theorem finset_card_powerset {a : Type*} [Fintype a] : Fintype.card (Set a) = 2 ^ Fintype.card a", lean_proof="",
+         domain="discrete_mathematics", difficulty="medium",
+         keywords=["finset", "cardinality", "powerset", "counting", "discrete"],
+         rationale="MiL Ch.6 'Discrete Mathematics' - counting subsets.",
+         requires_mathlib=True, mathlib_ref="Fintype.card_set",
+         source="Mathematics in Lean, Ch.6 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="group_inv_inv", informal="In a group, (a^-1)^-1 = a.",
+         lean_statement="theorem group_inv_inv {G : Type*} [Group G] (a : G) : (a^-1)^-1 = a", lean_proof="",
+         domain="group_theory", difficulty="easy",
+         keywords=["group", "inverse", "involution", "algebra"],
+         rationale="MiL Ch.9 'Groups and Rings' - the first structural lemma.",
+         requires_mathlib=True, mathlib_ref="inv_inv",
+         source="Mathematics in Lean, Ch.9 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="group_mul_left_inv", informal="In a group, a^-1 * a = 1.",
+         lean_statement="theorem group_mul_left_inv {G : Type*} [Group G] (a : G) : a^-1 * a = 1", lean_proof="",
+         domain="group_theory", difficulty="easy",
+         keywords=["group", "inverse", "identity", "algebra"],
+         rationale="MiL Ch.9 - the defining group axiom as a lemma.",
+         requires_mathlib=True, mathlib_ref="inv_mul_cancel",
+         source="Mathematics in Lean, Ch.9 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="mul_left_cancel_group", informal="In a group, a * b = a * c implies b = c.",
+         lean_statement="theorem mul_left_cancel_group {G : Type*} [Group G] {a b c : G} (h : a * b = a * c) : b = c", lean_proof="",
+         domain="group_theory", difficulty="easy",
+         keywords=["group", "cancellation", "injective", "algebra"],
+         rationale="MiL Ch.9 - left cancellation in groups.",
+         requires_mathlib=True, mathlib_ref="mul_left_cancel",
+         source="Mathematics in Lean, Ch.9 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="submodule_span_union", informal="The span of a union is the sum of the spans.",
+         lean_statement="theorem submodule_span_union {K V : Type*} [Field K] [AddCommGroup V] [Module K V] (S T : Set V) : span K (S union T) = span K S ⊔ span K T", lean_proof="",
+         domain="linear_algebra", difficulty="medium",
+         keywords=["span", "union", "submodule", "linear algebra", "lattice"],
+         rationale="MiL Ch.10 'Linear Algebra' - span and the submodule lattice.",
+         requires_mathlib=True, mathlib_ref="Submodule.span_union",
+         source="Mathematics in Lean, Ch.10 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="matrix_trace_additive", informal="The trace is additive: tr(A + B) = tr A + tr B.",
+         lean_statement="theorem matrix_trace_additive (K : Type*) [Field K] (A B : Matrix (Fin n) (Fin n) K) : (A + B).trace = A.trace + B.trace", lean_proof="",
+         domain="linear_algebra", difficulty="easy",
+         keywords=["trace", "additive", "matrix", "linear map"],
+         rationale="MiL Ch.10 - trace as a linear functional.",
+         requires_mathlib=True, mathlib_ref="Matrix.trace_add",
+         source="Mathematics in Lean, Ch.10 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="continuous_at_id", informal="The identity map is continuous at every point.",
+         lean_statement="theorem continuous_at_id {X : Type*} [TopologicalSpace X] (x : X) : ContinuousAt (fun y : X => y) x", lean_proof="",
+         domain="topology", difficulty="easy",
+         keywords=["continuous", "identity", "topology", "filter"],
+         rationale="MiL Ch.11 'Topology' - the first continuity fact.",
+         requires_mathlib=True, mathlib_ref="continuousAt_id",
+         source="Mathematics in Lean, Ch.11 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="tendsto_const", informal="A constant function tends to its value.",
+         lean_statement="theorem tendsto_const {X Y : Type*} [TopologicalSpace Y] (c : Y) (x : X) : Filter.Tendsto (fun _ : X => c) (Filter.principal {x}) (Filter.principal {c})", lean_proof="",
+         domain="topology", difficulty="medium",
+         keywords=["filter", "tendsto", "limit", "topology", "convergence"],
+         rationale="MiL Ch.11 - the first Tendsto lemma.",
+         requires_mathlib=True, mathlib_ref="Filter.Tendsto.const",
+         source="Mathematics in Lean, Ch.11 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="deriv_const", informal="The derivative of a constant is zero.",
+         lean_statement="theorem deriv_const (c : Real) : deriv (fun _ : Real => c) = 0", lean_proof="",
+         domain="analysis", difficulty="easy",
+         keywords=["derivative", "constant", "calculus", "differential"],
+         rationale="MiL Ch.12 'Differential Calculus' - the first derivative fact.",
+         requires_mathlib=True, mathlib_ref="deriv_const",
+         source="Mathematics in Lean, Ch.12 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="deriv_id", informal="The derivative of the identity is 1.",
+         lean_statement="theorem deriv_id : deriv (fun x : Real => x) = 1", lean_proof="",
+         domain="analysis", difficulty="easy",
+         keywords=["derivative", "identity", "calculus"],
+         rationale="MiL Ch.12 - the identity has derivative 1.",
+         requires_mathlib=True, mathlib_ref="deriv_id",
+         source="Mathematics in Lean, Ch.12 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="measure_union_disjoint", informal="The measure of a disjoint union is the sum of the measures.",
+         lean_statement="theorem measure_union_disjoint {X : Type*} [MeasurableSpace X] (m : Measure X) {s t : Set X} (hs : MeasurableSet s) (ht : MeasurableSet t) (hd : Disjoint s t) : m (s union t) = m s + m t", lean_proof="",
+         domain="measure_theory", difficulty="hard",
+         keywords=["measure", "union", "disjoint", "additivity", "measure theory"],
+         rationale="MiL Ch.13 'Integration and Measure Theory' - finite additivity.",
+         requires_mathlib=True, mathlib_ref="MeasureTheory.measure_union",
+         source="Mathematics in Lean, Ch.13 (Avigad-Massot, CC BY 4.0)"),
+    dict(name="integrable_const", informal="A constant function is integrable on a finite-measure space.",
+         lean_statement="theorem integrable_const {X : Type*} [MeasurableSpace X] (m : Measure X) [IsFiniteMeasure m] (c : Real) : Integrable (fun _ : X => c) m", lean_proof="",
+         domain="measure_theory", difficulty="medium",
+         keywords=["integrable", "constant", "measure", "integration"],
+         rationale="MiL Ch.13 - constant functions are integrable.",
+         requires_mathlib=True, mathlib_ref="integrable_const",
+         source="Mathematics in Lean, Ch.13 (Avigad-Massot, CC BY 4.0)"),
+]
+
+
+def main():
+    with open(PATH, encoding="utf-8") as f:
+        data = json.load(f)
+    existing = {e["name"] for e in data["entries"]}
+    added = [e for e in NEW_ENTRIES if e["name"] not in existing]
+    data["entries"].extend(added)
+    with open(PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    print(f"encyclopedia entries: {len(data['entries'])} (+{len(added)} MiL-sourced)")
+
+
+if __name__ == "__main__":
+    main()

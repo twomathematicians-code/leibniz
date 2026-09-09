@@ -94,7 +94,7 @@ PYTHONPATH=. pytest tests -q
 
 ## ◈ MATHEMATICAL DOMAINS
 
-The encyclopedia ships with certified theorems across five domains. Each entry includes an informal statement, a Lean 4 formalisation, and a verified proof.
+The encyclopedia ships with certified theorems across nine domains — 57 entries, each with an informal statement, a Lean 4 formalisation, and a verified proof or a Mathlib reference. **17 entries are aligned with [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/) (Avigad–Massot, CC BY 4.0)**, carrying their MiL chapter and Mathlib lemma; a MiL-aligned corpus (`scripts/mil_corpus.jsonl`) feeds the prover fine-tuning pipeline. Builders: `scripts/add_mil_entries.py`, `scripts/build_mil_corpus.py`.
 
 ### Linear Algebra $(12)$
 
@@ -250,7 +250,7 @@ flowchart LR
 |------|-------------|
 | **Review mode** | Submit a theorem + proof → 3‑gate verdict |
 | **Discovery mode** | Seed a topic → Discover conjectures → Prove (k candidates) → Verify (Lean) |
-| **Knowledge base** | 24 encyclopedia entries provide ground‑truth for Gate 2 &amp; provisional Gate 1 |
+| **Knowledge base** | 57 encyclopedia entries (17 MiL-aligned) provide ground‑truth for Gate 2 &amp; provisional Gate 1 |
 
 ---
 
@@ -266,7 +266,7 @@ leibniz/
 │   ├── compute/                SymPy symbolic engine (16 intents)
 │   ├── groups/su2.py           Wigner d, Weyl characters, Peter–Weyl verification (exact)
 │   ├── formal/lean_client.py   Lean 4 CLI bridge
-│   ├── encyclopedia/           40-entry knowledge base + Mathlib concept index
+│   ├── encyclopedia/           57-entry knowledge base + Mathlib concept index
 │   └── pipeline.py             Orchestrator (compute · review · formalize · su2_analysis · discover)
 ├── api/                        FastAPI host (10 endpoints incl. /compute, /formalize, /su2/analysis)
 ├── app/                        Gradio app + sample datasets (JSONL + PDF)
