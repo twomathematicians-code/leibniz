@@ -156,12 +156,35 @@ class StubBackend(BaseBackend):
         )
         expected = [c.lower() for c in expected]
         hay = _tokens(theorem.informal) | _tokens(theorem.lean_statement or "") | \
-            _tokens(proof.lean_tactics or "") | _tokens(proof.informal or "")
+            _tokens(proof.lean_tactics or "") | _tokens(proof.informal or "") | \
+            _tokens(theorem.name or "")
+
+        # Domain-clash detection: a proof using `Nat.add_comm` does NOT carry
+        # the vector-addition concept, even though `add_comm` alone would.
+        # If the statement is about vectors (Fin n → ℝ) and the proof cites a
+        # differently-namespaced lemma, the lemma map is untrustworthy —
+        # only literal concept words in the proof may count.
+        stmt_lc = (theorem.lean_statement or "").lower()
+        proof_lc = (proof.lean_tactics or "").lower()
+        vector_stmt = "fin" in stmt_lc and ("→ ℝ" in stmt_lc or "-> R" in stmt_lc)
+        foreign_namespace = ("nat." in proof_lc or " int." in proof_lc) and vector_stmt
 
         def _hit(concept: str) -> bool:
             # exact token match, or a shared 4-char prefix (e.g. "addition" ~ "add")
-            return any(concept == h or (len(concept) >= 4 and len(h) >= 4 and concept[:4] == h[:4])
-                       for h in hay)
+            direct = any(concept == h or (len(concept) >= 4 and len(h) >= 4 and concept[:4] == h[:4])
+                         for h in hay)
+            if direct:
+                return True
+            if foreign_namespace:
+                return False  # lemma map disabled across namespace clash
+            # Lemma-level understanding: a tactic like `mul_add` IS the concept
+            # "distributivity" — map known Lean lemma names to their concepts.
+            # Multi-word concepts match if ANY of their words appears in the map.
+            return any(
+                word in _LEMMA_CONCEPTS.get(h, "")
+                for h in hay if h in _LEMMA_CONCEPTS
+                for word in concept.split()
+            )
 
         matched = [c for c in expected if _hit(c)]
         missing = [c for c in expected if not _hit(c)]
@@ -241,7 +264,51 @@ class StubBackend(BaseBackend):
 # Heuristics for the stub prover ------------------------------------------------
 
 def _tokens(s: str) -> set:
-    return set(re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", (s or "").lower()))
+    # Return BOTH the full underscore-joined token (mul_add) and its parts
+    # (mul, add): lemma names match the concept map in full form, while
+    # theorem names like smul_add_vec contribute smul/add/vec.
+    out = set()
+    for chunk in re.split(r"[^a-zA-Z0-9_]", (s or "").lower()):
+        for tok in re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", chunk):
+            out.add(tok)
+            out.update(p for p in tok.split("_") if p)
+    return out
+
+
+# Known Lean lemma/tactic names → the mathematical concept they embody.
+# Lets the alignment gate see that `mul_add` IS distributivity, `add_comm` IS
+# commutativity, etc. — the way a working mathematician reads a proof.
+# Values are the concept's words joined by spaces; multi-word concepts match
+# if any word appears.
+_LEMMA_CONCEPTS = {
+    "mul_add": "distributivity multiplication",
+    "add_mul": "distributivity multiplication",
+    "add_comm": "commutativity addition",
+    "mul_comm": "commutativity multiplication",
+    "add_assoc": "associativity addition",
+    "mul_assoc": "associativity multiplication",
+    "add_left_cancel": "algebra addition",
+    "one_mul": "identity multiplication",
+    "mul_one": "identity multiplication",
+    "zero_add": "identity addition",
+    "mul_zero": "annihilation multiplication",
+    "zero_mul": "annihilation multiplication",
+    "even_zero": "parity divisibility",
+    "dvd_refl": "divisibility",
+    "one_dvd": "divisibility",
+    "ext": "pointwise vector",
+    "aesop": "algebra",
+    "linarith": "inequality order",
+    "omega": "inequality order",
+    "ring": "algebra",
+    "field_simp": "field",
+    "mul_pow": "algebra multiplication",
+    "pow_two": "squares",
+    "smul": "scalar multiplication vector linear algebra",
+    "vec": "vector space linear algebra",
+    # joined-form keys (when the tokenizer keeps underscores intact)
+    "add_comm_vec": "commutativity addition vector",
+}
 
 
 def _shape_of(theorem: Theorem) -> str:

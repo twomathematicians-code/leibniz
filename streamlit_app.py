@@ -461,7 +461,7 @@ elif mode == "Single Review":
             v = report["validity"]
             formal = "· formal" if v.get("formal") else "· provisional"
             st.markdown(f'<div class="brand-label">Gate 1 — Validity {formal}</div>', unsafe_allow_html=True)
-            st.markdown(f"##### {_gate_mark(v.get('passed'))} &nbsp;{'Certified' if v.get('passed') else 'Rejected' if v.get('passed') is False else 'Skipped'}")
+            st.markdown(f"##### {_gate_mark(v.get('passed'))} &nbsp;{'Certified' if v.get('passed') else 'Rejected' if v.get('passed') is False else 'Skipped'}", unsafe_allow_html=True)
             if v.get("certificate"):
                 st.code(v["certificate"])
             if v.get("error"):
