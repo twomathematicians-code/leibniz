@@ -326,3 +326,18 @@ Every item above the line is **executed and testable now**; everything below is 
 <p align="center">
   <sub>Two Mathematicians &nbsp;·&nbsp; <a href="https://github.com/twomathematicians-code/leibniz">GitHub</a> &nbsp;·&nbsp; <a href="https://leibniz.streamlit.app/">Streamlit</a> &nbsp;·&nbsp; MIT License</sub>
 </p>
+
+---
+
+## ◈ CITATION
+
+If you use Leibniz in your work, please cite it. GitHub renders a "Cite this repository" button from the [`CITATION.cff`](CITATION.cff) in this repository; the equivalent BibTeX is:
+
+```bibtex
+@software{solanki_leibniz,
+  author       = {Solanki, Mahesh Pravinsinh},
+  title        = {{Leibniz}: A Universal Calculator for Truth},
+  url          = {https://github.com/twomathematicians-code/leibniz},
+  license      = {MIT}
+}
+```
