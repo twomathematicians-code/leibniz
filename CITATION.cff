@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use Leibniz in your work, please cite it as below."
+title: "Leibniz: A Universal Calculator for Truth"
+authors:
+  - family-names: "Solanki"
+    given-names: "Mahesh Pravinsinh"
+    email: "twomathematicians@gmail.com"
+license: MIT
+repository-code: "https://github.com/twomathematicians-code/leibniz"
+url: "https://leibniz.streamlit.app/"
+keywords:
+  - automated-theorem-proving
+  - lean4
+  - formal-verification
+  - harmonic-analysis
+  - mathematics
+abstract: "Automated mathematical proof verification with three escalating gates of scrutiny - Lean 4 formal verification, knowledge-base alignment, and LLM critique - including exact symbolic harmonic analysis on SU(2)."
