@@ -2,6 +2,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Lean-4.14.0-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Tests-88%2F88-000000?style=flat-square">
+  <a href="https://github.com/twomathematicians-code/leibniz/actions/workflows/ci.yml"><img src="https://github.com/twomathematicians-code/leibniz/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/License-MIT-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Streamlit-live-000000?style=flat-square">
   <img src="https://img.shields.io/badge/Pages-live-000000?style=flat-square">
