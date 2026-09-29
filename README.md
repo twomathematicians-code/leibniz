@@ -30,7 +30,7 @@
 
 ## ◈ OVERVIEW
 
-Given a mathematical theorem $T$ and a candidate proof $\pi$, the Leibniz engine subjects $(T,\, \pi)$ to **three independent gates**:
+Given a mathematical theorem $T$ and a candidate proof $\pi$, the Leibniz engine subjects $(T\, \pi)$ to **three independent gates**:
 
 | Gate | Question | Mechanism |
 |------|----------|-----------|
