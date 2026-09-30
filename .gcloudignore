@@ -14,3 +14,4 @@ rh_data/
 app/samples/*.pdf
 *.png
 *.log
+nul
