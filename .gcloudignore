@@ -1,0 +1,16 @@
+.git
+.github
+.pytest_cache
+__pycache__
+lean/
+training/
+tests/
+docs/
+book/
+hardy/
+refs/
+zread_extract/
+rh_data/
+app/samples/*.pdf
+*.png
+*.log
