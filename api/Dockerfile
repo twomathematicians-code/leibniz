@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY leibniz/api/requirements.txt /app/leibniz/api/requirements.txt
+COPY api/requirements.txt /app/leibniz/api/requirements.txt
 RUN pip install --no-cache-dir -r /app/leibniz/api/requirements.txt
 
 # Copy only what the engine needs at runtime (no training, no .lean sources)
