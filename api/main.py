@@ -180,6 +180,19 @@ async def su2_endpoint(payload: dict):
     return engine.su2_analysis(l_max)
 
 
+@app.post("/agent", tags=["Agent"], summary="The mathematician's agent")
+async def agent_endpoint(payload: dict):
+    """Ask anything mathematical: the agent routes the query through
+    retrieval (encyclopedia RAG), symbolic computation, autoformalization,
+    and proof review, returning a synthesised answer plus an auditable
+    tool trail."""
+    query = (payload or {}).get("query", "")
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Field 'query' is required.")
+    from leibniz.agent import ask as agent_ask
+    return agent_ask(query.strip()).to_dict()
+
+
 @app.get("/", response_class=HTMLResponse, tags=["System"])
 async def landing():
     return LANDING_HTML

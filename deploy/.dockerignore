@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.github/
+lean/
+training/
+tests/
+docs/
+book/
+hardy/
+refs/
+zread_extract/
+rh_data/
+*.pdf
+*.png
+*.log

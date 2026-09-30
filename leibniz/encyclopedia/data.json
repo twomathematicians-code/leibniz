@@ -958,6 +958,64 @@
       "requires_mathlib": true,
       "mathlib_ref": "integrable_const",
       "source": "Mathematics in Lean, Ch.13 (Avigad-Massot, CC BY 4.0)"
+    },
+    {
+      "name": "peter_weyl_orthogonality",
+      "informal": "Peter-Weyl orthogonality: the matrix coefficients of the irreducible unitary representations of a compact group form an orthogonal basis of L^2; on SU(2), <t^l_mn, t^l'_m'n'> = delta_ll' delta_mm' delta_nn' / (2l+1).",
+      "lean_statement": "-- machine-verified symbolically for SU(2), l <= 2 (47/47 exact checks): see groups/su2.py verify_peter_weyl",
+      "lean_proof": "",
+      "domain": "harmonic_analysis",
+      "difficulty": "hard",
+      "keywords": [
+        "Peter-Weyl",
+        "orthogonality",
+        "compact group",
+        "SU(2)",
+        "representation",
+        "L2",
+        "harmonic analysis"
+      ],
+      "rationale": "The foundation theorem of harmonic analysis on compact groups; machine-verified in the engine by exact symbolic integration.",
+      "requires_mathlib": false,
+      "engine_ref": "groups.su2.verify_peter_weyl"
+    },
+    {
+      "name": "weyl_character_formula_su2",
+      "informal": "Weyl character formula on SU(2): the character of the irreducible representation of rank l is chi_l(theta) = sin((2l+1)theta/2)/sin(theta/2), equal to the trace of the Wigner d-matrix.",
+      "lean_statement": "-- verified symbolically for l <= 3: chi_l = Tr d^l (see groups/su2.py character_by_trace)",
+      "lean_proof": "",
+      "domain": "harmonic_analysis",
+      "difficulty": "medium",
+      "keywords": [
+        "Weyl character",
+        "character formula",
+        "SU(2)",
+        "trace",
+        "Wigner",
+        "representation"
+      ],
+      "rationale": "Characters collapse matrix representations to scalars; engine-verified against the trace.",
+      "requires_mathlib": false,
+      "engine_ref": "groups.su2.character_by_trace"
+    },
+    {
+      "name": "wigner_d_matrices",
+      "informal": "Wigner d-matrices: the explicit matrix elements d^l_mn(theta) of the irreducible representations of SU(2) in the Euler-angle parametrisation; the noncommutative analogue of the exponentials e^{ikx}.",
+      "lean_statement": "-- computed exactly (Condon-Shortley convention) for all l,m,n: see groups/su2.py wigner_d",
+      "lean_proof": "",
+      "domain": "harmonic_analysis",
+      "difficulty": "medium",
+      "keywords": [
+        "Wigner d-matrix",
+        "SU(2)",
+        "representation",
+        "Euler angles",
+        "rotation group",
+        "noncommutative"
+      ],
+      "rationale": "The matrix-valued frequencies of noncommutative Fourier analysis on SU(2); textbook-verified in the engine.",
+      "requires_mathlib": false,
+      "engine_ref": "groups.su2.wigner_d"
     }
   ]
 }

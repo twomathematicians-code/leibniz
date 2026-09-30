@@ -281,7 +281,7 @@ st.sidebar.markdown(f"""
 | Lean | {"available" if engine.lean.available else "provisional"} |
 """)
 
-mode = st.sidebar.radio("", ["Compute", "SU(2) Analysis", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
+mode = st.sidebar.radio("", ["Agent", "Compute", "SU(2) Analysis", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
 
 st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
 if SAMPLE_FILE.exists():
@@ -303,6 +303,47 @@ st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.
 # ═══════════════════════════════════════════════════════════════════════
 # MODE: Single Review
 # ═══════════════════════════════════════════════════════════════════════
+
+# MODE: Agent (the mathematician's companion)
+if mode == "Agent":
+    st.markdown('<p class="brand-label">The Mathematician&rsquo;s Agent</p>', unsafe_allow_html=True)
+    st.markdown("## Ask anything mathematical")
+    st.caption(
+        "The agent routes your request through the engine: retrieves from the "
+        "encyclopedia (RAG), computes symbolically, formalises into Lean, and "
+        "reviews proofs with a truth weight. Every answer carries its tool trail."
+    )
+    agent_examples = [
+        "(custom)",
+        "eigenvalues of [[2,0],[0,3]]",
+        "formalize the rank nullity theorem",
+        "what is the Peter-Weyl orthogonality theorem?",
+        "verify by rw [Nat.add_comm] the commutativity of vector addition",
+        "explain the Weyl character formula on SU(2)",
+    ]
+    a_choice = st.selectbox("Load example", agent_examples, label_visibility="collapsed")
+    a_default = "" if a_choice == "(custom)" else a_choice
+    a_query = st.text_input("Your question", value=a_default,
+                            placeholder="e.g. eigenvalues of [[2,0],[0,3]]",
+                            label_visibility="collapsed")
+    go_agent = st.button("Ask", type="primary", use_container_width=True)
+
+    if go_agent and a_query.strip():
+        from leibniz.agent import ask as agent_ask
+        result = agent_ask(a_query.strip())
+        st.markdown(f'<p class="brand-label">Route: {result.route}</p>',
+                    unsafe_allow_html=True)
+        st.markdown(result.answer)
+        with st.expander("Tool trail (audit every step)", expanded=False):
+            for s in result.trail:
+                st.markdown(f"**{s.tool}** — {s.summary}")
+                if s.detail.get("hits"):
+                    for h in s.detail["hits"]:
+                        st.caption(f"{h['name']} ({h['domain']}, {h['score']}): {h['informal'][:100]}")
+                elif s.detail.get("lean_statement"):
+                    st.code(s.detail["lean_statement"], language="lean")
+                elif s.detail.get("truth_weight") is not None:
+                    st.caption(f"truth weight: {s.detail['truth_weight']}/100 · overall: {s.detail['overall_pass']}")
 
 # MODE: Compute (Wolfram-Alpha-style symbolic engine)
 if mode == "Compute":
