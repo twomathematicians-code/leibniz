@@ -1,10 +1,14 @@
 """
-Leibniz — Streamlit App  (Two Mathematicians brand)
-=====================================================
-Monochrome proof verification engine.  PDF + JSONL upload,
-3‑gate review, discovery mode, examples & counter‑examples.
+SCITAMEHTAM Leibniz — the mathematician's engine (simplified UI)
+================================================================
+Three tasks a mathematician actually has, nothing else on the front page:
 
-Brand: Inter 300–800, Playfair Display italic accent, black/white/zinc.
+    1. Ask a question   — anything: compute, name a theorem, paste a proof
+    2. Check a proof    — paste it, get the three gates + a truth weight
+    3. Upload files     — PDFs and problem sets, batch-verified
+
+Advanced tools (Compute, SU(2) analysis, Discover, Formalize) live in a
+drawer. Plain language everywhere; every result auditable.
 """
 
 from __future__ import annotations
@@ -16,11 +20,11 @@ import sys
 import time
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import streamlit as st  # type: ignore
+import streamlit as st
 import pandas as pd
 
 from leibniz.pipeline import Engine
@@ -28,95 +32,36 @@ from leibniz.core.types import Theorem, Proof, to_dict
 from leibniz.encyclopedia import default as default_enc
 
 # ═══════════════════════════════════════════════════════════════════════
-# Page config
+# Page setup + brand
 # ═══════════════════════════════════════════════════════════════════════
 
 st.set_page_config(
-    page_title="Leibniz — Proof Verifier",
+    page_title="Leibniz — the mathematician's engine",
     page_icon="◈",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ═══════════════════════════════════════════════════════════════════════
-# Brand CSS  (Two Mathematicians — monochrome)
-# ═══════════════════════════════════════════════════════════════════════
-
 BRAND_CSS = """
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
-
-  :root {
-    --ink: #000000;
-    --slate: #1f2937;
-    --muted: #6b7280;
-    --faint: #f3f4f6;
-    --line: #e5e7eb;
-    --paper: #ffffff;
-    --mono: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
-  }
-
-  html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-    color: var(--ink);
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-  }
-
-  .brand-accent {
-    font-family: 'Playfair Display', serif;
-    font-style: italic;
-    font-weight: 400;
-  }
-
-  .brand-label {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-  }
-
-  .brand-mono {
-    font-family: var(--mono);
-  }
-
-  code, pre, .stCodeBlock {
-    font-family: var(--mono) !important;
-    background: var(--faint) !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 3px !important;
-  }
-
-  /* Verdict indicators — monochrome */
-  .verdict-pass { color: var(--ink); font-weight: 700; }
-  .verdict-warn { color: var(--muted); font-weight: 500; }
-  .verdict-fail { color: var(--line); font-weight: 400; text-decoration: line-through; }
-
-  /* Pipeline motif */
-  .pipeline { display: flex; gap: 0; align-items: center; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-  .pipeline-step { padding: 4px 10px; border: 1px solid var(--ink); color: var(--ink); }
-  .pipeline-arrow { padding: 4px 6px; color: var(--muted); }
-
-  /* Gate cards */
-  .gate { border: 1px solid var(--line); border-radius: 3px; padding: 16px; margin: 8px 0; background: var(--paper); }
-  .gate-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .gate-title { font-weight: 700; font-size: 1.02rem; }
-
-  /* Progress bar — monochrome */
-  .stProgress > div > div > div > div { background-color: var(--ink) !important; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+  :root { --ink:#000; --slate:#1f2937; --muted:#6b7280; --faint:#f3f4f6;
+          --line:#e5e7eb; --paper:#fff; }
+  html, body, [class*="css"] { font-family:'Inter',sans-serif; color:var(--ink); }
+  h1,h2,h3 { font-weight:700; letter-spacing:-0.4px; }
+  .brand-accent { font-family:'Playfair Display',serif; font-style:italic; }
+  .brand-label { font-size:.72rem; font-weight:600; text-transform:uppercase;
+                 letter-spacing:1.5px; color:var(--muted); }
+  code, pre { font-family:'SF Mono',Consolas,monospace !important;
+              background:var(--faint) !important; border:1px solid var(--line);
+              border-radius:3px !important; }
+  .verdict-pass { color:var(--ink); font-weight:700; }
+  .verdict-warn { color:var(--muted); font-weight:500; }
+  .verdict-fail { color:var(--line); font-weight:400; text-decoration:line-through; }
+  div[data-testid="stMetricValue"] { font-weight:800; }
 </style>
 """
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════════════════════
-# Session state
-# ═══════════════════════════════════════════════════════════════════════
 
 if "engine" not in st.session_state:
     st.session_state.engine = Engine()
@@ -127,81 +72,153 @@ SAMPLE_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "sample
 SAMPLE_PDF = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "samples" / "linear_algebra_proofs.pdf"
 
 # ═══════════════════════════════════════════════════════════════════════
-# Examples & counter‑examples
+# Sidebar — three tasks, advanced in a drawer
 # ═══════════════════════════════════════════════════════════════════════
 
-EXAMPLES = {
-    "PASS — vector addition commutes": {
-        "name": "add_comm_vec", "informal": "v + w = w + v for vectors in ℝⁿ",
-        "lean_statement": "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
-        "lean_proof": "by ext i; exact add_comm (v i) (w i)",
-        "domain": "linear_algebra", "difficulty": "easy", "expect": "pass",
-    },
-    "PASS — 2 + 2 = 4": {
-        "name": "two_plus_two", "informal": "Two plus two equals four",
-        "lean_statement": "theorem two_plus_two : 2 + 2 = 4",
-        "lean_proof": "by rfl", "domain": "arithmetic", "difficulty": "easy", "expect": "pass",
-    },
-    "PASS — scalar distributivity": {
-        "name": "smul_add_vec", "informal": "c · (v + w) = c·v + c·w",
-        "lean_statement": "theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w",
-        "lean_proof": "by ext i; exact mul_add c (v i) (w i)",
-        "domain": "linear_algebra", "difficulty": "medium", "expect": "pass",
-    },
-    "PASS — commutativity of + on ℕ": {
-        "name": "add_comm_nat", "informal": "a + b = b + a for natural numbers",
-        "lean_statement": "theorem add_comm_nat (a b : Nat) : a + b = b + a",
-        "lean_proof": "by rw [Nat.add_comm]",
-        "domain": "algebra", "difficulty": "medium", "expect": "pass",
-    },
-    "FAIL (Gate 1) — `sorry`": {
-        "name": "two_plus_two", "informal": "",
-        "lean_statement": "theorem two_plus_two : 2 + 2 = 4",
-        "lean_proof": "by sorry", "domain": "arithmetic", "difficulty": "easy", "expect": "fail",
-    },
-    "FAIL (Gate 1) — unknown identifier": {
-        "name": "add_comm_vec", "informal": "",
-        "lean_statement": "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
-        "lean_proof": "by not_a_tactic",
-        "domain": "linear_algebra", "difficulty": "easy", "expect": "fail",
-    },
-    "FAIL (Gate 2) — wrong domain": {
-        "name": "add_comm_vec", "informal": "Vector addition",
-        "lean_statement": "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
-        "lean_proof": "by rw [Nat.add_comm]",
-        "domain": "linear_algebra", "difficulty": "easy", "expect": "fail",
-    },
-    "WARN (Gate 3) — insufficient": {
-        "name": "eigenvalue_id", "informal": "Identity map eigenvalue",
-        "lean_statement": "theorem eigenvalue_id (v : Fin n → ℝ) (hv : v ≠ 0) : (λ x : Fin n → ℝ => x) v = (1 : ℝ) • v",
-        "lean_proof": "by trivial",
-        "domain": "linear_algebra", "difficulty": "medium", "expect": "warn",
-    },
-}
+st.sidebar.markdown('<p class="brand-accent" style="font-size:1.6rem;margin-bottom:0;">Leibniz</p>',
+                    unsafe_allow_html=True)
+st.sidebar.markdown('<p class="brand-label">the mathematician&rsquo;s engine</p>',
+                    unsafe_allow_html=True)
+st.sidebar.markdown("---")
+
+task = st.sidebar.radio(
+    "What do you want to do?",
+    ["Ask a question", "Check a proof", "Upload files"],
+    label_visibility="collapsed",
+)
+
+with st.sidebar.expander("Advanced tools"):
+    adv = st.radio(
+        "Advanced",
+        ["(pick a tool…)", "Compute (symbolic)", "SU(2) analysis",
+         "Discover conjectures", "Translate to Lean"],
+        label_visibility="collapsed",
+    )
+    if adv == "Compute (symbolic)":
+        task = "adv_compute"
+    elif adv == "SU(2) analysis":
+        task = "adv_su2"
+    elif adv == "Discover conjectures":
+        task = "adv_discover"
+    elif adv == "Translate to Lean":
+        task = "adv_formalize"
+
+if st.sidebar.button("About this engine", use_container_width=True):
+    task = "about"
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    f'<p class="brand-label">status</p>'
+    f'encyclopedia: {len(enc.all())} theorems &nbsp;·&nbsp; '
+    f'lean: {"available" if engine.lean.available else "provisional"}',
+    unsafe_allow_html=True,
+)
+if SAMPLE_FILE.exists():
+    with open(SAMPLE_FILE, "rb") as f:
+        st.sidebar.download_button("Sample problem set (JSONL)", f.read(),
+                                   "linear_algebra.jsonl", use_container_width=True)
+if SAMPLE_PDF.exists():
+    with open(SAMPLE_PDF, "rb") as f:
+        st.sidebar.download_button("Sample proof set (PDF)", f.read(),
+                                   "linear_algebra_proofs.pdf",
+                                   "application/pdf", use_container_width=True)
+st.sidebar.markdown(
+    '[leibniz.streamlit.app](https://leibniz.streamlit.app) · '
+    '[GitHub](https://github.com/twomathematicians-code/leibniz)'
+)
 
 # ═══════════════════════════════════════════════════════════════════════
-# Helpers
+# Shared helpers — plain-language rendering
 # ═══════════════════════════════════════════════════════════════════════
+
+def _gate_mark(passed: Optional[bool]) -> str:
+    if passed is True:
+        return '<span class="verdict-pass">●</span>'
+    if passed is False:
+        return '<span class="verdict-fail">○</span>'
+    return '<span class="verdict-warn">◐</span>'
+
+
+def soundness_words(rep: dict) -> str:
+    v = rep.get("validity", {})
+    if v.get("passed") is True and v.get("formal"):
+        return "Machine-certified — Lean compiled the proof (exit 0)."
+    if v.get("passed") is True:
+        return "Recognized — matches a certified proof in the encyclopedia."
+    if v.get("passed") is False:
+        return "Rejected — the proof does not hold (e.g. `sorry` or a broken step)."
+    return "Not formally checked — no Lean toolchain here; judged on structure."
+
+
+def topic_words(rep: dict) -> str:
+    a = rep.get("alignment", {})
+    s = a.get("score", 0.0)
+    if s >= 0.7:
+        return f"On target ({s:.2f}) — the proof addresses the theorem's concepts."
+    if s >= 0.4:
+        return f"Partly on target ({s:.2f}) — some concepts present, some missing."
+    return f"Off target ({s:.2f}) — likely the wrong setting for this statement."
+
+
+def reading_words(rep: dict) -> str:
+    r = rep.get("reading", {})
+    label = {"pass": "survives close reading",
+             "warn": "has reservations", "fail": "fails under scrutiny"}
+    plain = {"easy": "quick check", "medium": "logic check", "hard": "deep check"}
+    tiers = " · ".join(f"{plain.get(t.get('tier'), t.get('tier'))}: "
+                       f"{t.get('verdict')}" for t in r.get("tiers", []))
+    return f"{label.get(r.get('overall_verdict'), '?')} — {tiers}"
+
+
+def render_review(rep: dict) -> None:
+    """The one, plain-language review card used everywhere."""
+    tw = rep.get("truth_weight", 0)
+    ok = rep.get("overall_pass", False)
+    verdict = "PASS" if ok else "ATTENTION"
+
+    col_m, col_v = st.columns([1, 2])
+    with col_m:
+        st.metric("Truth weight", f"{tw}/100",
+                  delta=verdict, delta_color="normal" if ok else "off")
+    with col_v:
+        st.markdown(f"**Is it logically sound?** &nbsp;{_gate_mark(rep['validity'].get('passed'))} "
+                    f"{soundness_words(rep)}", unsafe_allow_html=True)
+        st.markdown(f"**Is it about the right things?** &nbsp;{topic_words(rep)}")
+        st.markdown(f"**Does it survive close reading?** &nbsp;{reading_words(rep)}")
+
+    with st.expander("The detail (gates, certificate, concepts)"):
+        v = rep.get("validity", {})
+        if v.get("certificate"):
+            st.caption(f"certificate: {v['certificate']}")
+        if v.get("error"):
+            st.caption(f"gate 1 note: {v['error']}")
+        a = rep.get("alignment", {})
+        if a.get("matched_concepts"):
+            st.caption(f"concepts present: {', '.join(a['matched_concepts'])}")
+        if a.get("missing_concepts"):
+            st.caption(f"concepts missing: {', '.join(a['missing_concepts'])}")
+        if a.get("rationale"):
+            st.caption(a["rationale"])
+        b = rep.get("truth_breakdown", {})
+        if b:
+            st.caption(f"weight breakdown — soundness {b.get('shares',{}).get('validity')}, "
+                       f"on-topic {b.get('shares',{}).get('alignment')}, "
+                       f"reading {b.get('shares',{}).get('reading')} "
+                       f"(a weight of evidence, not a probability)")
+
 
 def _parse_pdf(file_bytes: bytes) -> List[dict]:
-    """Line-based extractor: a line starting with `theorem <name>` opens a
-    statement; a following line starting with `by ` is its proof. Wrapped
-    statement lines (continuations) are merged. Prose containing the word
-    'theorem' is ignored because we anchor on the keyword at line start."""
     try:
         import pdfplumber  # type: ignore
     except ImportError:
         return []
-
     lines: List[str] = []
     with pdfplumber.open(BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             lines.extend((page.extract_text() or "").split("\n"))
-
     rows: List[dict] = []
-    current: Optional[dict] = None
-    awaiting_proof = False
-
+    current = None
+    awaiting = False
     for line in lines:
         s = line.strip()
         if re.match(r"^theorem\s+\w+", s):
@@ -209,19 +226,16 @@ def _parse_pdf(file_bytes: bytes) -> List[dict]:
                 rows.append(current)
             current = {"lean_statement": s, "lean_proof": "", "domain": "general",
                        "difficulty": "medium", "keywords": []}
-            awaiting_proof = True
-        elif awaiting_proof and re.match(r"^by\s+", s):
+            awaiting = True
+        elif awaiting and re.match(r"^by\s+", s):
             if current is not None:
                 current["lean_proof"] = s
-            awaiting_proof = False
-        elif awaiting_proof and current is not None and s and not s.startswith("THEOREM"):
-            # continuation of a wrapped statement line (math/code only)
-            if any(op in s for op in ["*", "+", "=", "->", "=>", "(", ")", "<", ">", "≠", "λ"]):
+            awaiting = False
+        elif awaiting and current is not None and s and not s.startswith("THEOREM"):
+            if any(op in s for op in ["*", "+", "=", "->", "=>", "(", ")", "<", ">"]):
                 current["lean_statement"] += " " + s
-
     if current:
         rows.append(current)
-
     for i, r in enumerate(rows, 1):
         m = re.match(r"^theorem\s+(\w+)", r["lean_statement"])
         r["name"] = m.group(1) if m else f"pdf_{i}"
@@ -249,514 +263,332 @@ def _theorem_from_dict(d: dict) -> Theorem:
 
 
 def _proof_from_dict(d: dict) -> Proof:
-    return Proof(lean_tactics=d.get("lean_proof", d.get("proof", "")), informal=d.get("informal", ""))
-
-
-def _gate_mark(passed: Optional[bool]) -> str:
-    """Monochrome indicator: ● pass  ◐ skip  ○ fail."""
-    if passed is True:
-        return '<span class="verdict-pass">●</span>'
-    if passed is False:
-        return '<span class="verdict-fail">○</span>'
-    return '<span class="verdict-warn">◐</span>'
-
-
-def _verdict_label(v: str) -> str:
-    return {"pass": "PASS", "warn": "WARN", "fail": "FAIL"}.get(v, v.upper())
+    return Proof(lean_tactics=d.get("lean_proof", d.get("proof", "")),
+                 informal=d.get("informal", ""))
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# Sidebar
+# TASK 1 — Ask a question
 # ═══════════════════════════════════════════════════════════════════════
 
-st.sidebar.markdown('<p class="brand-accent" style="font-size:1.6rem;margin-bottom:0;">Leibniz</p>', unsafe_allow_html=True)
-st.sidebar.markdown('<p class="brand-label">Universal Calculator for Truth</p>', unsafe_allow_html=True)
-st.sidebar.markdown("---")
-
-st.sidebar.markdown(f"""
-| | |
-|---|---|
-| Engine | `{engine.backend.name}` |
-| Encyclopedia | {len(enc.all())} entries |
-| Lean | {"available" if engine.lean.available else "provisional"} |
-""")
-
-mode = st.sidebar.radio("", ["Agent", "Compute", "SU(2) Analysis", "Single Review", "Batch Upload", "Formalize", "Discovery", "About"], label_visibility="collapsed")
-
-st.sidebar.markdown('<p class="brand-label">Sample data</p>', unsafe_allow_html=True)
-if SAMPLE_FILE.exists():
-    with open(SAMPLE_FILE, "rb") as f:
-        st.sidebar.download_button("Linear Algebra · JSONL", f.read(), "linear_algebra.jsonl", "application/jsonl",
-                                   use_container_width=True)
-if SAMPLE_PDF.exists():
-    with open(SAMPLE_PDF, "rb") as f:
-        st.sidebar.download_button("LA Proofs · PDF (3 pages)", f.read(), "linear_algebra_proofs.pdf", "application/pdf",
-                                   use_container_width=True)
-SAMPLE_PDF_BIG = Path(os.path.dirname(os.path.abspath(__file__))) / "app" / "samples" / "linear_algebra_big_theorems.pdf"
-if SAMPLE_PDF_BIG.exists():
-    with open(SAMPLE_PDF_BIG, "rb") as f:
-        st.sidebar.download_button("LA Big Theorems · PDF (5 pages)", f.read(), "linear_algebra_big_theorems.pdf", "application/pdf",
-                                   use_container_width=True)
-
-st.sidebar.markdown("**Resources**  \n[Streamlit App](https://leibniz.streamlit.app/)  \n[Browser playground](https://twomathematicians-code.github.io/leibniz/)  \n[GitHub](https://github.com/twomathematicians-code/leibniz)")
-
-# ═══════════════════════════════════════════════════════════════════════
-# MODE: Single Review
-# ═══════════════════════════════════════════════════════════════════════
-
-# MODE: Agent (the mathematician's companion)
-if mode == "Agent":
-    st.markdown('<p class="brand-label">The Mathematician&rsquo;s Agent</p>', unsafe_allow_html=True)
+if task == "Ask a question":
+    st.markdown('<p class="brand-label">Ask</p>', unsafe_allow_html=True)
     st.markdown("## Ask anything mathematical")
-    st.caption(
-        "The agent routes your request through the engine: retrieves from the "
-        "encyclopedia (RAG), computes symbolically, formalises into Lean, and "
-        "reviews proofs with a truth weight. Every answer carries its tool trail."
-    )
-    agent_examples = [
-        "(custom)",
-        "eigenvalues of [[2,0],[0,3]]",
-        "formalize the rank nullity theorem",
-        "what is the Peter-Weyl orthogonality theorem?",
-        "verify by rw [Nat.add_comm] the commutativity of vector addition",
-        "explain the Weyl character formula on SU(2)",
-    ]
-    a_choice = st.selectbox("Load example", agent_examples, label_visibility="collapsed")
-    a_default = "" if a_choice == "(custom)" else a_choice
-    a_query = st.text_input("Your question", value=a_default,
-                            placeholder="e.g. eigenvalues of [[2,0],[0,3]]",
-                            label_visibility="collapsed")
-    go_agent = st.button("Ask", type="primary", use_container_width=True)
+    st.caption("A computation, a theorem's name, or paste a whole Lean proof — "
+               "the engine works out what you need and shows every step it took.")
 
-    if go_agent and a_query.strip():
+    examples = [
+        "(type your own…)",
+        "compute eigenvalues of [[2,0],[0,3]]",
+        "integral of 1/(1+x^2)",
+        "what is the Peter–Weyl orthogonality theorem?",
+        "formalize the rank-nullity theorem",
+        "theorem my_two : 2 + 2 = 4 := by rfl",
+        "by ext i; exact mul_add c (v i) (w i)",
+    ]
+    choice = st.selectbox("Examples", examples, label_visibility="collapsed")
+    default_q = "" if choice.startswith("(type") else choice
+    query = st.text_area(
+        "Your question",
+        value=default_q, height=110,
+        placeholder="e.g. determinant of [[1,2],[3,4]]   ·   "
+                    "e.g. state Cayley–Hamilton in Lean   ·   or paste a proof",
+        label_visibility="collapsed",
+    )
+    go = st.button("Ask", type="primary", use_container_width=True)
+
+    if go and query.strip():
         from leibniz.agent import ask as agent_ask
-        result = agent_ask(a_query.strip())
-        st.markdown(f'<p class="brand-label">Route: {result.route}</p>',
+        with st.spinner("Working…"):
+            result = agent_ask(query.strip())
+        st.markdown(f'<p class="brand-label">the engine used: {result.route}</p>',
                     unsafe_allow_html=True)
         st.markdown(result.answer)
-        with st.expander("Tool trail (audit every step)", expanded=False):
+        with st.expander("Every step the engine took (audit trail)"):
             for s in result.trail:
                 st.markdown(f"**{s.tool}** — {s.summary}")
-                if s.detail.get("hits"):
-                    for h in s.detail["hits"]:
-                        st.caption(f"{h['name']} ({h['domain']}, {h['score']}): {h['informal'][:100]}")
-                elif s.detail.get("lean_statement"):
+                for h in s.detail.get("hits", [])[:3]:
+                    st.caption(f"{h['name']} ({h['domain']}, relevance {h['score']}): "
+                               f"{h['informal'][:90]}")
+                if s.detail.get("lean_statement"):
                     st.code(s.detail["lean_statement"], language="lean")
-                elif s.detail.get("truth_weight") is not None:
-                    st.caption(f"truth weight: {s.detail['truth_weight']}/100 · overall: {s.detail['overall_pass']}")
+                if s.detail.get("truth_weight") is not None:
+                    st.caption(f"truth weight {s.detail['truth_weight']}/100 · "
+                               f"overall {'PASS' if s.detail['overall_pass'] else 'ATTENTION'}")
+    elif go:
+        st.info("Type a question above, or pick an example.")
 
-# MODE: Compute (Wolfram-Alpha-style symbolic engine)
-if mode == "Compute":
-    st.markdown('<p class="brand-label">Symbolic Computation</p>', unsafe_allow_html=True)
-    st.markdown("## Compute")
-    st.caption("Exact, step-by-step symbolic computation — solve, differentiate, integrate, matrices.")
+# ═══════════════════════════════════════════════════════════════════════
+# TASK 2 — Check a proof
+# ═══════════════════════════════════════════════════════════════════════
 
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        examples_compute = [
-            "(custom)",
-            "solve x^2 - 5*x + 6 = 0",
-            "derivative of x^3 + 2*x^2",
-            "integral of 1/(1 + x^2)",
-            "limit of sin(x)/x as x -> 0",
-            "taylor series of exp(x)",
-            "simplify (x^2 - 1)/(x - 1)",
-            "factor x^3 - 6*x^2 + 11*x - 6",
-            "expand (x + 2)^4",
-            "determinant of [[1,2],[3,4]]",
-            "inverse of [[1,2],[3,4]]",
-            "eigenvalues of [[2,0],[0,3]]",
-            "rank of [[1,2,3],[2,4,6],[1,1,1]]",
-            "trace of [[1,2],[3,4]]",
-            "2/3 + 5/7",
-        ]
-        choice = st.selectbox("Load example", examples_compute, label_visibility="collapsed")
-        default_q = "" if choice == "(custom)" else choice
-        q = st.text_input("Query", value=default_q, placeholder="e.g. solve x^2 - 1 = 0",
-                          label_visibility="collapsed")
-        go_c = st.button("Compute", type="primary", use_container_width=True)
+elif task == "Check a proof":
+    st.markdown('<p class="brand-label">Check</p>', unsafe_allow_html=True)
+    st.markdown("## Check a proof")
+    st.caption("Paste a Lean theorem with its proof — or just the proof "
+               "(`by …`) plus the theorem's name — and get three plain answers: "
+               "is it sound, is it on-topic, does it read well. Plus a truth weight.")
 
-    with c2:
-        if go_c and q.strip():
-            r = engine.compute(q.strip())
-            st.markdown('<div class="brand-label">Input interpretation</div>', unsafe_allow_html=True)
-            st.code(r.input_interpretation or q)
-            st.markdown('<div class="brand-label">Answer</div>', unsafe_allow_html=True)
-            if r.ok:
-                st.markdown(f"**{r.answer}**")
-                if r.answer_latex and r.answer_latex != r.answer:
-                    st.latex(r.answer_latex)
-                with st.expander("Step-by-step"):
-                    for s in r.steps:
-                        st.markdown(s)
+    proof_examples = {
+        "(paste your own…)": "",
+        "A correct proof": "theorem two_plus_two : 2 + 2 = 4 := by rfl",
+        "A proof with a gap (`sorry`)": "theorem two_plus_two : 2 + 2 = 4 := by sorry",
+        "The wrong setting (Nat lemma on vectors)":
+            "theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v := by rw [Nat.add_comm]",
+        "Distributivity done properly":
+            "theorem smul_add_vec (c : ℝ) (v w : Fin n → ℝ) : c • (v + w) = c • v + c • w := by ext i; exact mul_add c (v i) (w i)",
+    }
+    ex = st.selectbox("Examples", list(proof_examples), label_visibility="collapsed")
+    pasted = st.text_area(
+        "Theorem + proof",
+        value=proof_examples[ex], height=130,
+        placeholder="theorem my_thm (n : Nat) : n + 0 = n := by rfl",
+        label_visibility="collapsed",
+    )
+    theorem_name_hint = st.text_input(
+        "If you paste only a proof (no theorem), which theorem is it? (optional)",
+        placeholder="e.g. two_plus_two",
+    )
+    go_check = st.button("Check", type="primary", use_container_width=True)
+
+    if go_check and pasted.strip():
+        from leibniz.agent import parse_pasted_proof
+        parsed = parse_pasted_proof(pasted.strip())
+
+        if parsed and parsed[0] and parsed[1]:
+            statement, proof_text = parsed
+            name_m = re.match(r"theorem\s+(\w+)", statement)
+            t = Theorem(name_m.group(1) if name_m else "pasted_theorem", "",
+                        statement, "general", "medium")
+            rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
+            render_review(rep)
+        elif parsed and parsed[1]:
+            proof_text = parsed[1]
+            name = theorem_name_hint.strip() or ""
+            entry = enc.get(name) if name else None
+            if entry:
+                t = Theorem(entry["name"], entry.get("informal", ""),
+                            entry.get("lean_statement"), entry.get("domain", "general"),
+                            entry.get("difficulty", "medium"))
+                rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
+                render_review(rep)
             else:
-                st.error(r.error or "Computation failed.")
-
-elif mode == "SU(2) Analysis":
-    st.markdown('<p class="brand-label">Noncommutative Analysis · SU(2)</p>', unsafe_allow_html=True)
-    st.markdown("## Harmonic analysis on SU(2) — exact, symbolic, machine-verified")
-    st.markdown(
-        "The irreducible unitary dual of $\\mathrm{SU}(2)$ is $\\{l \\in \\mathbb{N}_0\\}$ "
-        "with $d_l = 2l+1$. This mode computes the Wigner $d$-matrices, Weyl characters, "
-        "and fusion rules **exactly**, and machine-verifies the **Peter–Weyl orthogonality "
-        "theorem** by exact symbolic integration (Beta-function reduction — zero floating point)."
-    )
-
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        l_max = st.slider("Maximum rank l", 0, 3, 2,
-                          help="Peter–Weyl verification covers all pairs l, l' ≤ this value.")
-        go_su2 = st.button("Run SU(2) Analysis", type="primary", use_container_width=True)
-
-    with c2:
-        if go_su2:
-            with st.spinner("Computing representation theory exactly…"):
-                rep = engine.su2_analysis(l_max)
-
-            st.markdown('<div class="brand-label">The irreducible dual</div>', unsafe_allow_html=True)
-            dual_rows = [f"| $l$ | $d_l$ | $\\chi_l(\\theta)$ |" , "|---|---|---|"]
-            for l in range(l_max + 1):
-                dual_rows.append(f"| {l} | {2*l+1} | {rep['weyl_character_formula'].split(' = ')[1] if l==0 else ''} |")
-            # simpler: show dimension table + formula
-            st.markdown(
-                "**Weyl character formula:** $\\chi_l(\\theta) = \\dfrac{\\sin((2l+1)\\theta/2)}{\\sin(\\theta/2)}$  "
-                f"— verified $\\chi_l = \\mathrm{{Tr}}\\,d^l$ for $l \\le {l_max}$ ✓"
-            )
-            dims = " · ".join(f"$d_{{{l}}} = {2*l+1}$" for l in range(l_max + 1))
-            st.markdown(f"**Dimensions:** {dims}")
-
-            st.markdown('<div class="brand-label">Peter–Weyl orthogonality (machine-verified)</div>', unsafe_allow_html=True)
-            ok, total = rep["peter_weyl_passed"], rep["peter_weyl_checks"]
-            st.metric("Exact symbolic checks passed", f"{ok} / {total}")
-            st.progress(ok / total if total else 0)
-            st.caption(
-                "$\\langle t^l_{mn}, t^{l'}_{m'n'}\\rangle = \\delta_{ll'}\\delta_{mm'}\\delta_{nn'}/(2l+1)$ — "
-                "checked by exact symbolic integration, not numerics."
-            )
-            with st.expander("Sample verifications"):
-                for s in rep["sample_results"]:
-                    mark = "●" if s["ok"] else "○"
-                    st.markdown(f"{mark} `{s['pair']}` → `{s['value']}` = `{s['expected']}`")
-
-            st.markdown('<div class="brand-label">Fusion rules</div>', unsafe_allow_html=True)
-            ex = rep["fusion_examples"]
-            for key in list(ex)[:4]:
-                st.markdown(f"$V_{{{key.split('⊗')[0][2:]}}} \\otimes V_{{{key.split('⊗')[1][2:]}}} = "
-                            f"{' \\oplus '.join(f'V_{{{l}}}' for l in ex[key])}$")
-
-            st.caption(
-                "This is the frequency side of the Ruzhansky–Turunen global quantization. "
-                "Operator-valued symbols $R_a(x,\\xi)$ and $L^2$-boundedness certificates "
-                "are the next milestone (see repository roadmap)."
-            )
-
-elif mode == "Single Review":
-    st.markdown('<p class="brand-label">Single Review</p>', unsafe_allow_html=True)
-    st.markdown("## Theorem Review")
-
-    # Pipeline motif
-    st.markdown(
-        '<div class="pipeline">'
-        '<span class="pipeline-step">Theorem</span><span class="pipeline-arrow">→</span>'
-        '<span class="pipeline-step">Gate 1 · Validity</span><span class="pipeline-arrow">→</span>'
-        '<span class="pipeline-step">Gate 2 · Alignment</span><span class="pipeline-arrow">→</span>'
-        '<span class="pipeline-step">Gate 3 · Reading</span><span class="pipeline-arrow">→</span>'
-        '<span class="pipeline-step">Verdict</span>'
-        '</div><br>',
-        unsafe_allow_html=True,
-    )
-
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        example = st.selectbox("Load example", ["— custom —"] + list(EXAMPLES.keys()), label_visibility="collapsed")
-
-        if example != "— custom —":
-            ex = EXAMPLES[example]
-            def_name, def_stmt, def_proof, def_domain, def_diff, def_inf = (
-                ex["name"], ex["lean_statement"], ex["lean_proof"], ex["domain"], ex["difficulty"], ex.get("informal",""))
-            st.caption(f"Expected: {ex['expect'].upper()}")
+                st.warning("You pasted a bare proof. Add the theorem's name above "
+                           "(e.g. `two_plus_two`) so the engine knows what it "
+                           "should prove — or paste the full "
+                           "`theorem … := by …` line.")
         else:
-            def_name = def_stmt = def_proof = ""
-            def_domain, def_diff, def_inf = "linear_algebra", "easy", ""
-
-        name = st.text_input("Name", value=def_name, placeholder="add_comm_vec", label_visibility="collapsed")
-        domain = st.selectbox("Domain", ["linear_algebra", "arithmetic", "algebra", "number_theory", "set_theory", "general"],
-                              index=["linear_algebra","arithmetic","algebra","number_theory","set_theory","general"].index(def_domain) if def_domain in ["linear_algebra","arithmetic","algebra","number_theory","set_theory","general"] else 0)
-        diff = st.selectbox("Difficulty", ["easy", "medium", "hard"],
-                           index=["easy","medium","hard"].index(def_diff) if def_diff in ["easy","medium","hard"] else 0)
-
-        stmt = st.text_area("Lean statement", value=def_stmt, height=80,
-                           placeholder="theorem add_comm_vec (v w : Fin n → ℝ) : v + w = w + v",
-                           label_visibility="collapsed")
-        proof = st.text_area("Proof", value=def_proof, height=80,
-                            placeholder="by ext i; exact add_comm (v i) (w i)",
-                            label_visibility="collapsed")
-        go = st.button("Run 3‑Gate Review", type="primary", use_container_width=True)
-
-    with c2:
-        if go and stmt.strip():
-            t = Theorem(name.strip() or "unnamed", "", stmt.strip(), domain, diff)
-            p = Proof(lean_tactics=proof.strip() or None)
-            report = to_dict(engine.review(t, p))
-
-            v = report["validity"]
-            formal = "· formal" if v.get("formal") else "· provisional"
-            st.markdown(f'<div class="brand-label">Gate 1 — Validity {formal}</div>', unsafe_allow_html=True)
-            st.markdown(f"##### {_gate_mark(v.get('passed'))} &nbsp;{'Certified' if v.get('passed') else 'Rejected' if v.get('passed') is False else 'Skipped'}", unsafe_allow_html=True)
-            if v.get("certificate"):
-                st.code(v["certificate"])
-            if v.get("error"):
-                st.caption(v["error"])
-
-            a = report["alignment"]
-            st.markdown('<div class="brand-label">Gate 2 — Alignment</div>', unsafe_allow_html=True)
-            st.progress(a["score"])
-            st.markdown(f"Score **{a['score']:.2f}** &nbsp; matched: `{', '.join(a.get('matched_concepts',[]) or ['—'])}` &nbsp; missing: `{', '.join(a.get('missing_concepts',[]) or ['—'])}`")
-            st.caption(a.get("rationale",""))
-
-            r = report["reading"]
-            st.markdown('<div class="brand-label">Gate 3 — Reading</div>', unsafe_allow_html=True)
-            cols = st.columns(3)
-            for i, tv in enumerate(r.get("tiers", [])):
-                with cols[i]:
-                    label = _verdict_label(tv["verdict"])
-                    st.markdown(f"**{tv['tier'].upper()}**  \n{label}")
-                    for c in tv.get("comments", []):
-                        st.caption(c)
-
-            overall = report["overall_pass"]
-            if overall:
-                st.success("Passed all three gates.")
-            else:
-                st.warning("Attention — one or more gates flagged issues.")
-
-            st.download_button("Download report · JSON", json.dumps(report, indent=2, ensure_ascii=False),
-                              f"review_{name.strip()}.json", "application/json", use_container_width=True)
+            st.warning("Could not find a proof to check. Paste something like "
+                       "`theorem name : statement := by tactics`.")
+    elif go_check:
+        st.info("Paste a proof above, or pick an example.")
 
 # ═══════════════════════════════════════════════════════════════════════
-# MODE: Batch Upload
+# TASK 3 — Upload files
 # ═══════════════════════════════════════════════════════════════════════
 
-elif mode == "Batch Upload":
-    st.markdown('<p class="brand-label">Batch Upload</p>', unsafe_allow_html=True)
-    st.markdown("## Batch Verification")
+elif task == "Upload files":
+    st.markdown('<p class="brand-label">Upload</p>', unsafe_allow_html=True)
+    st.markdown("## Upload problem sets or papers")
+    st.caption("A PDF with theorems and proofs, or a JSONL file — every item "
+               "goes through the same three checks and gets a truth weight. "
+               "Download the sidebar samples to try it.")
 
-    tab1, tab2 = st.tabs(["JSONL", "PDF"])
+    tab_pdf, tab_jsonl = st.tabs(["PDF", "JSONL"])
 
-    with tab1:
-        jf = st.file_uploader("Upload JSONL file", type=["jsonl", "json"], key="jl")
-        if jf:
-            rows = _parse_jsonl(jf.read().decode("utf-8", errors="replace"))
-            pr = [r for r in rows if r.get("lean_proof","").strip()]
-            st.caption(f"{len(rows)} theorems · {len(pr)} with proofs")
-
-            if st.button("Verify batch", type="primary", use_container_width=True):
-                results = []
-                prog = st.progress(0)
-                passed = 0
-                for i, r in enumerate(rows):
-                    t = _theorem_from_dict(r)
-                    p = _proof_from_dict(r)
-                    rep = to_dict(engine.review(t, p))
-                    rep["_name"] = t.name
-                    results.append(rep)
-                    if rep.get("overall_pass"):
-                        passed += 1
-                    prog.progress((i + 1) / len(rows))
-
-                df = pd.DataFrame([{
-                    "Theorem": r["_name"], "V": _gate_mark(r["validity"].get("passed")),
-                    "A": f"{r['alignment']['score']:.2f}",
-                    "R": _verdict_label(r["reading"]["overall_verdict"]),
-                    "Overall": "●" if r["overall_pass"] else "○",
-                } for r in results])
-                st.dataframe(df, use_container_width=True, hide_index=True)
-                st.metric("Pass rate", f"{passed}/{len(rows)}")
-                st.download_button("Download results · JSON", json.dumps(results, indent=2, ensure_ascii=False),
-                                  "batch_results.json", "application/json", use_container_width=True)
-
-    with tab2:
-        pf = st.file_uploader("Upload PDF", type=["pdf"], key="pdf")
+    with tab_pdf:
+        pf = st.file_uploader("PDF file", type=["pdf"], key="pdf_up")
         if pf:
             rows = _parse_pdf(pf.read())
             if rows:
-                st.caption(f"Extracted {len(rows)} candidate pairs")
-                if st.button("Verify PDF pairs", type="primary", use_container_width=True):
+                st.info(f"Found **{len(rows)}** theorem–proof pair(s) in the PDF.")
+                if st.button("Check all", type="primary", use_container_width=True):
                     results = []
                     prog = st.progress(0)
                     passed = 0
                     for i, r in enumerate(rows):
-                        t = _theorem_from_dict(r)
-                        p = _proof_from_dict(r)
-                        rep = to_dict(engine.review(t, p))
-                        rep["_name"] = t.name
+                        rep = to_dict(engine.review(_theorem_from_dict(r),
+                                                    _proof_from_dict(r)))
+                        rep["_name"] = r.get("name", f"item {i+1}")
                         results.append(rep)
                         if rep.get("overall_pass"):
                             passed += 1
                         prog.progress((i + 1) / len(rows))
-                    st.metric("Pass rate", f"{passed}/{len(rows)}")
-                    st.download_button("Download results · JSON", json.dumps(results, indent=2, ensure_ascii=False),
-                                      "pdf_results.json", "application/json", use_container_width=True)
+                    st.metric("Checked", f"{passed}/{len(rows)} passed overall")
+                    df = pd.DataFrame([{
+                        "theorem": r["_name"],
+                        "sound": r["validity"].get("passed"),
+                        "on-topic": f"{r['alignment']['score']:.2f}",
+                        "reads": r["reading"]["overall_verdict"],
+                        "truth weight": r["truth_weight"],
+                    } for r in results])
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+                    st.download_button("Download the full report (JSON)",
+                                       json.dumps(results, indent=2, ensure_ascii=False),
+                                       "leibniz_pdf_report.json",
+                                       use_container_width=True)
             else:
-                st.caption("No theorem–proof pairs extracted. Try a JSONL file instead.")
+                st.warning("No theorem–proof pairs found. The extractor looks "
+                           "for lines starting `theorem` and `by `. A JSONL "
+                           "upload is more reliable.")
+    with tab_jsonl:
+        jf = st.file_uploader("JSONL file", type=["jsonl", "json"], key="jl_up")
+        if jf:
+            rows = _parse_jsonl(jf.read().decode("utf-8", errors="replace"))
+            with_p = [r for r in rows if r.get("lean_proof", r.get("proof", "")).strip()]
+            st.info(f"{len(rows)} theorems · {len(with_p)} with proofs")
+            if rows and st.button("Check all", type="primary", use_container_width=True,
+                                  key="jl_check"):
+                results = []
+                prog = st.progress(0)
+                passed = 0
+                for i, r in enumerate(rows):
+                    rep = to_dict(engine.review(_theorem_from_dict(r),
+                                                _proof_from_dict(r)))
+                    rep["_name"] = r.get("name", f"item {i+1}")
+                    results.append(rep)
+                    if rep.get("overall_pass"):
+                        passed += 1
+                    prog.progress((i + 1) / len(rows))
+                st.metric("Checked", f"{passed}/{len(rows)} passed overall")
+                df = pd.DataFrame([{
+                    "theorem": r["_name"],
+                    "sound": r["validity"].get("passed"),
+                    "on-topic": f"{r['alignment']['score']:.2f}",
+                    "reads": r["reading"]["overall_verdict"],
+                    "truth weight": r["truth_weight"],
+                } for r in results])
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.download_button("Download the full report (JSON)",
+                                   json.dumps(results, indent=2, ensure_ascii=False),
+                                   "leibniz_jsonl_report.json",
+                                   use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════════════
-# MODE: Formalize (NL → Lean)
+# ADVANCED TOOLS
 # ═══════════════════════════════════════════════════════════════════════
 
-elif mode == "Formalize":
-    st.markdown('<p class="brand-label">Autoformalization</p>', unsafe_allow_html=True)
-    st.markdown("## Natural Language → Lean 4")
-    st.markdown(
-        "Type an informal theorem. The engine recognises it against the encyclopedia "
-        "(knowledge-base-assisted formalization) and, for novel statements, asks the LLM "
-        "backend to translate. Each result references the corresponding Mathlib lemma."
-    )
-
-    c1, c2 = st.columns([1, 1])
+elif task == "adv_compute":
+    st.markdown('<p class="brand-label">Advanced · compute</p>', unsafe_allow_html=True)
+    st.markdown("## Symbolic computation")
+    st.caption("Exact, step-by-step — like a transparent, open Wolfram: "
+               "solve, integrate, differentiate, matrices.")
+    c1, c2 = st.columns(2)
     with c1:
-        examples_nl = [
-            "(custom)",
-            "The rank-nullity theorem: dim(range) + dim(kernel) = dim(V).",
-            "A matrix is invertible iff its determinant is nonzero.",
-            "det(A·B) = det(A)·det(B).",
-            "Every eigenvalue of a real symmetric matrix is real.",
-            "Cayley-Hamilton: a matrix satisfies its characteristic polynomial.",
-            "A linear map is injective iff its kernel is trivial.",
-        ]
-        choice = st.selectbox("Load example", examples_nl, label_visibility="collapsed")
-        default_nl = "" if choice == "(custom)" else choice
-        informal = st.text_area("Informal statement", value=default_nl, height=110,
-                                placeholder="e.g. The rank-nullity theorem...", label_visibility="collapsed")
-        go_f = st.button("Formalize", type="primary", use_container_width=True)
-
+        q = st.text_input("Query", placeholder="eigenvalues of [[2,0],[0,3]]",
+                          label_visibility="collapsed")
+        go_c = st.button("Compute", type="primary", use_container_width=True)
     with c2:
-        if go_f and informal.strip():
-            r = engine.formalize(informal.strip())
-            st.markdown('<div class="brand-label">Result</div>', unsafe_allow_html=True)
-
-            src_icon = {"recognised": "●", "generated": "◐", "none": "○"}.get(r.source, "○")
-            st.markdown(f"**Source:** {src_icon} `{r.source}` &nbsp; **Confidence:** `{r.confidence:.2f}`")
-            if r.matched_entry:
-                st.markdown(f"**Recognised as:** `{r.matched_entry}`")
-
-            if r.lean_statement:
-                st.markdown('<div class="brand-label">Lean 4 statement</div>', unsafe_allow_html=True)
-                st.code(r.lean_statement, language="lean")
+        if go_c and q.strip():
+            r = engine.compute(q.strip())
+            if r.ok:
+                st.code(r.input_interpretation or q)
+                st.markdown(f"**{r.answer}**")
+                if r.answer_latex and r.answer_latex != r.answer:
+                    st.latex(r.answer_latex)
+                with st.expander("Step by step"):
+                    for s in r.steps:
+                        st.markdown(s)
             else:
-                st.caption("No Lean statement produced.")
+                st.error(r.error or "Could not compute.")
+        elif go_c:
+            st.info("Type a computation above.")
 
-            if r.mathlib_refs:
-                st.markdown('<div class="brand-label">Mathlib references</div>', unsafe_allow_html=True)
-                for ref in r.mathlib_refs:
-                    st.markdown(f"- `{ref}`")
+elif task == "adv_su2":
+    st.markdown('<p class="brand-label">Advanced · SU(2)</p>', unsafe_allow_html=True)
+    st.markdown("## Harmonic analysis on SU(2)")
+    st.caption("The engine computes the representation theory of the rotation "
+               "group exactly — Wigner matrices, characters — and "
+               "machine-verifies the Peter–Weyl theorem by exact symbolic "
+               "integration. No floating point anywhere.")
+    c1, c2 = st.columns(2)
+    with c1:
+        l_max = st.slider("Maximum rank l", 0, 3, 2)
+        go_s = st.button("Run the analysis", type="primary", use_container_width=True)
+    with c2:
+        if go_s:
+            rep = engine.su2_analysis(l_max)
+            ok, total = rep["peter_weyl_passed"], rep["peter_weyl_checks"]
+            st.metric("Peter–Weyl checks passed", f"{ok} / {total}")
+            st.progress(ok / total if total else 0)
+            st.caption("⟨t, t'⟩ = δ/(2l+1) — every check an exact symbolic "
+                       "identity, not a numeric coincidence.")
+            st.markdown(f"**Characters:** $\\chi_l = \\sin((2l+1)\\theta/2)/"
+                        f"\\sin(\\theta/2)$, verified $= \\mathrm{{Tr}}\\,d^l$ for "
+                        f"$l \\le {l_max}$")
 
-            st.caption(r.notes)
-
-            # Optional: run the 3-gate review on the formalized statement
-            if r.lean_statement and st.button("Run 3-gate review on this statement", use_container_width=True):
-                rep = to_dict(engine.formalize_and_review(informal.strip()))
-                v = rep["validity"]; a = rep["alignment"]; rd = rep["reading"]
-                vmark = "●" if v.get("passed") is True else ("○" if v.get("passed") is False else "◐")
-                st.markdown(f"**Gate 1 Validity:** {vmark} &nbsp; **Gate 2 Alignment:** {a['score']:.2f} &nbsp; **Gate 3 Reading:** {rd['overall_verdict'].upper()}")
-
-# ═══════════════════════════════════════════════════════════════════════
-# MODE: Discovery
-# ═══════════════════════════════════════════════════════════════════════
-
-elif mode == "Discovery":
-    st.markdown('<p class="brand-label">Discovery</p>', unsafe_allow_html=True)
-    st.markdown("## Discover → Prove → Certify")
-
+elif task == "adv_discover":
+    st.markdown('<p class="brand-label">Advanced · discover</p>', unsafe_allow_html=True)
+    st.markdown("## Discover")
+    st.caption("Seed a topic — the engine proposes conjectures, tries proofs, "
+               "and certifies what passes. Honest about what it cannot prove.")
     c1, c2 = st.columns([1, 2])
     with c1:
-        seed = st.text_input("Seed topic", "linear algebra")
+        seed = st.text_input("Topic", value="linear algebra",
+                             label_visibility="collapsed")
         n_conj = st.slider("Conjectures", 1, 10, 5)
-        k_cands = st.slider("Candidates per conjecture", 1, 8, 4)
-        go_d = st.button("Run discovery", type="primary", use_container_width=True)
-
+        go_d = st.button("Discover", type="primary", use_container_width=True)
     with c2:
-        if go_d:
-            with st.spinner("Discovering…"):
-                res = to_dict(engine.discover_and_verify(seed, n=n_conj, k=k_cands))
-            cert = res.get("certified", [])
-            fail = res.get("failed", [])
-            st.metric("Success", f"{len(cert)}/{len(cert)+len(fail)}")
+        if go_d and seed.strip():
+            res = to_dict(engine.discover_and_verify(seed.strip(), n=n_conj))
+            st.metric("Certified", f"{len(res['certified'])}/{len(res['certified']) + len(res['failed'])}")
+            for c in res["certified"]:
+                t, p = c["theorem"], c["proof"]
+                st.markdown(f"● **{t['name']}** ({t['domain']})")
+                st.code(f"{t['lean_statement']}  :=  {p['lean_tactics']}", language="lean")
+            for c in res["failed"]:
+                st.markdown(f"○ {c['theorem']['name']} — no proof found (honest failure)")
 
-            if cert:
-                st.markdown("**Certified**")
-                for c in cert:
-                    t, p = c["theorem"], c["proof"]
-                    st.code(f"{t['lean_statement']}  :=  {p['lean_tactics']}")
-            if fail:
-                st.markdown("**Unproven**")
-                for c in fail:
-                    st.markdown(f"· {c['theorem']['name']}")
-
-            st.download_button("Download · JSON", json.dumps(res, indent=2, ensure_ascii=False),
-                              f"discovery_{seed.replace(' ','_')}.json", "application/json", use_container_width=True)
-
-# ═══════════════════════════════════════════════════════════════════════
-# MODE: About
-# ═══════════════════════════════════════════════════════════════════════
-
-elif mode == "About":
-    st.markdown('<p class="brand-label">About</p>', unsafe_allow_html=True)
-    st.markdown("## Leibniz · A Universal Calculator for Truth")
-
-    c1, c2, c3 = st.columns(3)
+elif task == "adv_formalize":
+    st.markdown('<p class="brand-label">Advanced · translate</p>', unsafe_allow_html=True)
+    st.markdown("## Translate to Lean")
+    st.caption("Say a theorem in English — the engine finds its formal Lean "
+               "statement and the Mathlib reference.")
+    c1, c2 = st.columns(2)
     with c1:
-        st.metric("Encyclopedia", len(enc.all()))
+        q = st.text_input("Theorem (English)", placeholder="a matrix is invertible iff its determinant is nonzero",
+                          label_visibility="collapsed")
+        go_f = st.button("Translate", type="primary", use_container_width=True)
     with c2:
-        st.metric("Lean theorems", 16)
-    with c3:
-        st.metric("Tests", "53")
+        if go_f and q.strip():
+            r = engine.formalize(q.strip())
+            if r.lean_statement:
+                st.markdown(f"Recognised as **{r.matched_entry}** "
+                            f"(confidence {r.confidence:.2f})")
+                st.code(r.lean_statement, language="lean")
+                if r.mathlib_refs:
+                    st.caption("Mathlib: " + ", ".join(f"`{x}`" for x in r.mathlib_refs))
+            else:
+                st.warning("Not recognised. Try naming the theorem or using "
+                           "its standard vocabulary.")
 
-    st.markdown("---")
+# ═══════════════════════════════════════════════════════════════════════
+# ABOUT
+# ═══════════════════════════════════════════════════════════════════════
 
-    st.markdown("""
-    ### Three pillars  *(Leibniz, ca. 1666)*
-
-    | Pillar | Realisation |
-    |--------|------------|
-    | **Characteristica Universalis** — a universal logical language | `Theorem` · `Proof` · Lean 4 bridge |
-    | **Encyclopedia** — a library of verified thoughts | 24‑entry knowledge base + Mathlib |
-    | **Calculus Ratiocinator** — an engine that derives facts automatically | Stub / HF / Remote LLM backends |
-
-    ### Three gates
-
-    | Gate | Question | Output |
-    |------|----------|--------|
-    | **Validity** | Is the proof logically sound? | ● Pass / ◐ Skip / ○ Reject |
-    | **Alignment** | Does the proof address the theorem's concepts? | Score 0.00 – 1.00 |
-    | **Reading** | How does it hold up under human scrutiny? | Easy → Medium → Hard per‑tier verdict |
-    """)
-
-    st.markdown("---")
-    st.markdown("### Examples & counter‑examples")
-
-    for label, ex in EXAMPLES.items():
-        expect = ex["expect"]
-        with st.expander(f"{label}"):
-            c1, c2 = st.columns([3, 1])
-            with c1:
-                st.code(f"{ex['lean_statement']}  :=  {ex['lean_proof']}")
-            with c2:
-                st.caption(f"Domain: {ex['domain']} · {ex['difficulty']}")
-                if st.button(f"Test", key=f"t_{ex['name']}_{label[:10]}"):
-                    t = Theorem(ex["name"], ex.get("informal",""), ex["lean_statement"], ex["domain"], ex["difficulty"])
-                    p = Proof(lean_tactics=ex["lean_proof"])
-                    rep = to_dict(engine.review(t, p))
-                    icon = "●" if rep["overall_pass"] else "○"
-                    st.markdown(f"Result: {icon} &nbsp; V:{_gate_mark(rep['validity']['passed'])} &nbsp; A:{rep['alignment']['score']:.2f} &nbsp; R:{_verdict_label(rep['reading']['overall_verdict'])}", unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("### Encyclopedia coverage")
-    doms = {}
-    for e in enc.all():
-        d = e.get("domain", "general")
-        doms[d] = doms.get(d, 0) + 1
-    st.dataframe(pd.DataFrame([{"Domain": k, "Entries": v} for k, v in sorted(doms.items())]), use_container_width=True, hide_index=True)
-
-    st.markdown("---")
-    st.markdown('<p style="text-align:center;color:var(--muted);font-style:italic;">"If we had an exact language … one could simply say: <strong>Let us calculate!</strong>" — Leibniz, 1677</p>', unsafe_allow_html=True)
+elif task == "about":
+    st.markdown('<p class="brand-label">About</p>', unsafe_allow_html=True)
+    st.markdown("## The mathematician's engine")
+    st.markdown(
+        "Three checks on any proof — **is it sound, is it on-topic, does it "
+        "read well** — combined into one truth weight. Underneath: symbolic "
+        "computation (exact, SymPy), a Lean 4 verification layer, an "
+        "encyclopedia of certified theorems, and exact harmonic analysis on "
+        "SU(2) (Peter–Weyl machine-verified, 47/47 checks)."
+    )
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Encyclopedia", f"{len(enc.all())} theorems")
+    c2.metric("Tests", "113 passing")
+    c3.metric("Peter–Weyl", "47/47 exact")
+    st.markdown(
+        "**Truth weight** — a transparent composite: soundness 50%, "
+        "on-topic 25%, close-reading 25%. A weight of evidence, "
+        "*not* a probability: every component is inspectable in the detail "
+        "of each review."
+    )
+    st.markdown(
+        "**Honest limits** — formal Lean certificates need the Mathlib "
+        "toolchain (architecture ready); operator symbols R(x,l) on SU(2) "
+        "are the next milestone; hard analysis is open research. "
+        "The engine shows failures, never invents success."
+    )

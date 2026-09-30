@@ -67,10 +67,36 @@ class AgentAnswer:
         }
 
 
+# A pasted Lean theorem+proof: "theorem name ... : ... := by ..." (or term)
+_PASTED_PROOF_RE = re.compile(
+    r"(theorem\s+\w+[^:]*:.+?)\s*:=\s*(by\b.+|[\w\.\[\]\(\)\s]+)$",
+    re.DOTALL,
+)
+
+
+def parse_pasted_proof(text: str):
+    """If the query IS a pasted Lean theorem+proof, split it.
+
+    Returns (statement, proof) or None. Handles both 'theorem n : P := by tac'
+    and a bare proof block like 'by rw [Nat.add_comm]'.
+    """
+    t = text.strip()
+    m = _PASTED_PROOF_RE.search(t)
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    if t.startswith("by ") or t.startswith("by\n"):
+        return None, t
+    return None
+
+
 def _route(query: str) -> List[str]:
     """Decide which tools to run, in order. Always retrieves first."""
     q = query.lower()
     tools = ["retrieve"]
+    # a pasted Lean theorem+proof, or a bare 'by ...' block -> review directly
+    if _PASTED_PROOF_RE.search(query) or query.strip().startswith("by "):
+        tools.append("review")
+        return tools
     if any(w in q for w in _COMPUTE_WORDS) or _MATRIX_RE.search(query):
         tools.append("compute")
     if any(w in q for w in _FORMALIZE_WORDS):
@@ -139,31 +165,88 @@ def ask(query: str, engine: Optional[Engine] = None, k: int = 3) -> AgentAnswer:
 
     # --- 4. review ------------------------------------------------------------
     if "review" in tools:
-        # Build a (theorem, proof) pair from the best retrieval hit if the
-        # query contains a proof attempt; otherwise review the top statement.
-        proof_text = _extract_proof(query)
-        top = hits[0] if hits else None
         from .core.types import Theorem, Proof, to_dict
-        if proof_text and top:
-            t = Theorem(top.name, top.informal, top.statement or None,
-                        top.domain, "medium")
-            rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
-            summary = (f"3-gate review of the supplied proof for `{top.name}`: "
-                       f"truth weight {rep['truth_weight']}/100 "
-                       f"({'PASS' if rep['overall_pass'] else 'ATTENTION'})")
-            trail.append(AgentStep(
-                tool="review", input=proof_text, summary=summary,
-                detail={"truth_weight": rep["truth_weight"],
-                        "overall_pass": rep["overall_pass"]},
-            ))
-            sections.append(
-                f"**Reviewed:** {summary}\n\n"
-                f"Gate 1 validity: {rep['validity'].get('passed')} · "
-                f"Gate 2 alignment: {rep['alignment']['score']:.2f} · "
-                f"Gate 3 reading: {rep['reading']['overall_verdict']}"
-            )
-        else:
-            trail.append(AgentStep(
+
+        # Priority 1: the query IS a pasted theorem+proof -> review it directly
+        parsed = parse_pasted_proof(query)
+        reviewed_directly = False
+        if parsed is not None and (parsed[0] or parsed[1]):
+            statement, proof_text = parsed
+            if statement and proof_text:
+                name_m = re.match(r"theorem\s+(\w+)", statement)
+                t = Theorem(
+                    name=(name_m.group(1) if name_m else "pasted_theorem"),
+                    informal="", lean_statement=statement,
+                    domain="general", difficulty="medium",
+                )
+                rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
+                summary = (f"reviewed the pasted proof of `{t.name}`: "
+                           f"truth weight {rep['truth_weight']}/100 "
+                           f"({'PASS' if rep['overall_pass'] else 'ATTENTION'})")
+                trail.append(AgentStep(
+                    tool="review", input=proof_text, summary=summary,
+                    detail={"truth_weight": rep["truth_weight"],
+                            "overall_pass": rep["overall_pass"]},
+                ))
+                sections.append(
+                    f"**Reviewed your proof:** {summary}\n\n"
+                    f"- Is it logically sound? {rep['validity'].get('passed')}\n"
+                    f"- Is it about the right things? "
+                    f"{rep['alignment']['score']:.2f}\n"
+                    f"- Does it survive close reading? "
+                    f"{rep['reading']['overall_verdict']}"
+                )
+                reviewed_directly = True
+            elif proof_text and hits:
+                # bare 'by ...' block + a retrieval match gives the theorem
+                top = hits[0]
+                t = Theorem(top.name, top.informal, top.statement or None,
+                            top.domain, "medium")
+                rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
+                summary = (f"reviewed the supplied proof for `{top.name}`: "
+                           f"truth weight {rep['truth_weight']}/100 "
+                           f"({'PASS' if rep['overall_pass'] else 'ATTENTION'})")
+                trail.append(AgentStep(
+                    tool="review", input=proof_text, summary=summary,
+                    detail={"truth_weight": rep["truth_weight"],
+                            "overall_pass": rep["overall_pass"]},
+                ))
+                sections.append(
+                    f"**Reviewed:** {summary}\n\n"
+                    f"- Is it logically sound? {rep['validity'].get('passed')}\n"
+                    f"- Is it about the right things? "
+                    f"{rep['alignment']['score']:.2f}\n"
+                    f"- Does it survive close reading? "
+                    f"{rep['reading']['overall_verdict']}"
+                )
+                reviewed_directly = True
+
+        # Priority 2: keyword-routed review with an encyclopedia context
+        if not reviewed_directly:
+            proof_text = _extract_proof(query)
+            top = hits[0] if hits else None
+            if proof_text and top:
+                t = Theorem(top.name, top.informal, top.statement or None,
+                            top.domain, "medium")
+                rep = to_dict(engine.review(t, Proof(lean_tactics=proof_text)))
+                summary = (f"reviewed the supplied proof for `{top.name}`: "
+                           f"truth weight {rep['truth_weight']}/100 "
+                           f"({'PASS' if rep['overall_pass'] else 'ATTENTION'})")
+                trail.append(AgentStep(
+                    tool="review", input=proof_text, summary=summary,
+                    detail={"truth_weight": rep["truth_weight"],
+                            "overall_pass": rep["overall_pass"]},
+                ))
+                sections.append(
+                    f"**Reviewed:** {summary}\n\n"
+                    f"- Is it logically sound? {rep['validity'].get('passed')}\n"
+                    f"- Is it about the right things? "
+                    f"{rep['alignment']['score']:.2f}\n"
+                    f"- Does it survive close reading? "
+                    f"{rep['reading']['overall_verdict']}"
+                )
+            else:
+                trail.append(AgentStep(
                 tool="review", input=query,
                 summary="no proof text detected to review",
             ))
