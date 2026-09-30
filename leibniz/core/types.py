@@ -121,6 +121,56 @@ class GateReport:
         reading_ok = self.reading.overall_verdict != "fail"
         return bool(validity_ok and alignment_ok and reading_ok)
 
+    # --- Truth weight -------------------------------------------------------
+    # A transparent heuristic composite of the three gates, on a 0-100 scale.
+    # It is a WEIGHT OF EVIDENCE, not a probability: each gate contributes a
+    # documented share (validity 50%, alignment 25%, reading 25%) and the
+    # mapping from verdicts to numbers is fixed and inspectable below.
+    #   validity: formal certificate 1.0 | provisional 0.7 | skipped 0.4 | rejected 0.0
+    #   reading : per-tier pass 1.0 | warn 0.5 | fail 0.0, averaged over tiers
+
+    _VALIDITY_WEIGHT_SHARE = 0.50
+    _ALIGNMENT_WEIGHT_SHARE = 0.25
+    _READING_WEIGHT_SHARE = 0.25
+
+    def _validity_component(self) -> float:
+        v = self.validity
+        if v.passed is True:
+            return 1.0 if v.formal else 0.7   # formal Lean cert vs provisional match
+        if v.passed is None:
+            return 0.4                        # skipped / inconclusive
+        return 0.0                            # rejected
+
+    def _reading_component(self) -> float:
+        if not self.reading.tiers:
+            return 0.0
+        value = {"pass": 1.0, "warn": 0.5, "fail": 0.0}
+        return sum(value.get(t.verdict, 0.5) for t in self.reading.tiers) / len(self.reading.tiers)
+
+    @property
+    def truth_weight(self) -> int:
+        """Composite weight of truth, 0-100 (heuristic; see class docstring)."""
+        score = (
+            self._VALIDITY_WEIGHT_SHARE * self._validity_component()
+            + self._ALIGNMENT_WEIGHT_SHARE * self.alignment.score
+            + self._READING_WEIGHT_SHARE * self._reading_component()
+        )
+        return round(100 * max(0.0, min(1.0, score)))
+
+    def truth_breakdown(self) -> Dict[str, object]:
+        """The inspectable components behind `truth_weight`."""
+        return {
+            "truth_weight": self.truth_weight,
+            "validity_component": round(self._validity_component(), 3),
+            "alignment_component": round(self.alignment.score, 3),
+            "reading_component": round(self._reading_component(), 3),
+            "shares": {"validity": self._VALIDITY_WEIGHT_SHARE,
+                       "alignment": self._ALIGNMENT_WEIGHT_SHARE,
+                       "reading": self._READING_WEIGHT_SHARE},
+            "note": ("heuristic weight of evidence across the three gates; "
+                     "not a probability"),
+        }
+
 
 # ----------------------------------------------------------------------------
 # §3. Discovery results
@@ -173,6 +223,8 @@ def _include_properties(d: Dict[str, Any], obj: Any) -> None:
     """Add computed @property values that are useful in serialized output."""
     if isinstance(obj, GateReport):
         d["overall_pass"] = obj.overall_pass
+        d["truth_weight"] = obj.truth_weight
+        d["truth_breakdown"] = obj.truth_breakdown()
     elif isinstance(obj, DiscoveryResult):
         d["success_rate"] = obj.success_rate
 

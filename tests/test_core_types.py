@@ -129,3 +129,56 @@ class TestDiscoveryResult:
         assert dr.success_rate == 0.0
         assert dr.certified == []
         assert dr.failed == []
+
+
+class TestTruthWeight:
+    """The composite weight of truth (heuristic, 0-100)."""
+
+    def _report(self, passed, formal, align, tier_verdicts):
+        from leibniz.core.types import (GateReport, VerificationResult,
+                                        AlignmentReport, ReadingReport,
+                                        TierVerdict, Difficulty)
+        tiers = [TierVerdict(tier=Difficulty.EASY, verdict=tier_verdicts[0]),
+                 TierVerdict(tier=Difficulty.MEDIUM, verdict=tier_verdicts[1]),
+                 TierVerdict(tier=Difficulty.HARD, verdict=tier_verdicts[2])]
+        return GateReport(
+            theorem=Theorem("t", ""), proof=Proof(lean_tactics="by rfl"),
+            validity=VerificationResult(passed=passed, formal=formal),
+            alignment=AlignmentReport(score=align),
+            reading=ReadingReport(tiers=tiers, overall_verdict="pass"),
+        )
+
+    def test_formal_certificate_scores_highest(self):
+        r = self._report(True, True, 1.0, ["pass"]*3)
+        assert r.truth_weight == 100
+
+    def test_rejected_scores_lowest(self):
+        r = self._report(False, False, 0.0, ["fail"]*3)
+        assert r.truth_weight == 0
+
+    def test_provisional_between_formal_and_rejected(self):
+        formal = self._report(True, True, 0.5, ["pass"]*3)
+        provisional = self._report(True, False, 0.5, ["pass"]*3)
+        rejected = self._report(False, False, 0.5, ["pass"]*3)
+        assert formal.truth_weight > provisional.truth_weight > rejected.truth_weight
+
+    def test_range(self):
+        for passed in (True, False, None):
+            r = self._report(passed, False, 0.3, ["warn"]*3)
+            assert 0 <= r.truth_weight <= 100
+
+    def test_breakdown_inspectable(self):
+        r = self._report(True, True, 1.0, ["pass"]*3)
+        b = r.truth_breakdown()
+        assert b["truth_weight"] == 100
+        assert abs(sum(b["shares"].values()) - 1.0) < 1e-9
+        assert "not a probability" in b["note"]
+
+    def test_serialized_in_review(self):
+        from leibniz.pipeline import Engine
+        from leibniz.core.types import to_dict
+        e = Engine()
+        rep = e.review(Theorem("two_plus_two", "", "theorem two_plus_two : 2 + 2 = 4"),
+                       Proof(lean_tactics="by rfl"))
+        d = to_dict(rep)
+        assert "truth_weight" in d and "truth_breakdown" in d
