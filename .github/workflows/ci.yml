@@ -95,9 +95,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install elan
-      uses: leanprover/elan-init@v2
-      with:
-        default-toolchain: leanprover/lean4:v4.14.0
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
+        sh elan-init.sh -y --default-toolchain leanprover/lean4:v4.14.0
+        echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
     - name: Lake build
       working-directory: lean

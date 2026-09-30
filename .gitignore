@@ -36,3 +36,4 @@ lean/lake-packages/
 .DS_Store
 Thumbs.db
 zread_extract/
+book/
