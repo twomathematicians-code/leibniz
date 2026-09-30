@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r /app/leibniz/api/requirements.txt
 
 # Copy only what the engine needs at runtime (no training, no .lean sources)
 COPY pyproject.toml /app/leibniz/pyproject.toml
-COPY leibniz/leibniz/ /app/leibniz/leibniz/
-COPY leibniz/api/ /app/leibniz/api/
+COPY leibniz/ /app/leibniz/leibniz/
+COPY api/ /app/leibniz/api/
 
 # Environment
 ENV PYTHONPATH=/app/leibniz

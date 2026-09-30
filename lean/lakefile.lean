@@ -14,7 +14,7 @@ import Lake
 open Lake.DSL
 
 package «Leibniz» where
-  version := v!"0.1.0"
+  version := "0.1.0"
   srcDir := "."
 
 -- NOTE: no `require mathlib` by default (keeps the build fast & lightweight).
