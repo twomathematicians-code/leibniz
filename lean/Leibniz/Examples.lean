@@ -26,8 +26,8 @@ theorem add_zero_left (n : Nat) : n + 0 = n := by rfl
 /-- Right zero of multiplication: for all `n`, `n * 0 = 0` (base equation of `Nat.mul`). -/
 theorem mul_zero_right (n : Nat) : n * 0 = 0 := by rfl
 
-/-- Right identity of multiplication: for all `n`, `n * 1 = n` (by kernel reduction). -/
-theorem mul_one_right (n : Nat) : n * 1 = n := by rfl
+/-- Right identity of multiplication: for all `n`, `n * 1 = n`. -/
+theorem mul_one_right (n : Nat) : n * 1 = n := by rw [Nat.mul_one]
 
 /-- Addition of natural numbers is commutative. -/
 theorem add_comm_nat (a b : Nat) : a + b = b + a := by rw [Nat.add_comm]

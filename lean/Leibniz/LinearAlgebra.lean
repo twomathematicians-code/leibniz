@@ -3,9 +3,21 @@ Copyright (c) 2026 twomathematicians-code. MIT license.
 
 # Leibniz — Linear Algebra (Undergraduate Core)
 
-Vector-space axioms on `Fin n → ℝ` (pointwise).  Every proof compiles against
-Lean 4 **core only** — no Mathlib required.  These mirror the entries in
-`leibniz/leibniz/encyclopedia/data.json`.
+Vector-space axioms on `Fin n → ℝ` (pointwise).
+
+**Requires Mathlib** (the `ℝ` notation, `•` on Pi types, and the `ext`
+tactic are Mathlib/Std facilities, not Lean core).  This file is therefore
+EXCLUDED from the default `lake build` (see `lakefile.lean` roots).
+
+To build it: add `require mathlib from git
+"https://github.com/leanprover-community/mathlib4.git"` to the lakefile,
+include `Leibniz.LinearAlgebra` in the roots, then `lake build`
+(first Mathlib fetch takes ~20-40 minutes and several GB).
+
+The Python engine verifies these same statements symbolically
+(`leibniz/groups` + encyclopedia), so the mathematical content is
+machine-checked even while this Lean formalisation waits on Mathlib.
+These mirror the entries in `leibniz/leibniz/encyclopedia/data.json`.
 -/
 
 namespace Leibniz.LinearAlgebra

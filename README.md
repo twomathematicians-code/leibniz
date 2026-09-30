@@ -272,9 +272,9 @@ leibniz/
 ├── api/                        FastAPI host (10 endpoints incl. /compute, /formalize, /su2/analysis)
 ├── app/                        Gradio app + sample datasets (JSONL + PDF)
 ├── docs/                       Browser playground + workflow diagram
-├── lean/                       Lean 4 library (16 theorems + Mathlib bridge)
+├── lean/                       Lean 4 library (CI-built core: Basic+Examples; LinearAlgebra+MathlibLA need Mathlib)
 ├── training/                   SFT fine‑tuning framework (44‑pair corpus)
-└── tests/                      53 tests
+└── tests/                      94 tests
 ```
 
 ---
